@@ -1,0 +1,35 @@
+# Logs
+*.log
+/var/log/
+
+# Environment
+.env
+
+# Temporary files
+*.tmp
+*.bak
+/tmp/
+
+# SSH keys
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Backup files
+*.backup
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+test_output/
