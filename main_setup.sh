@@ -52,9 +52,10 @@ NEW_SSH_PORT=$(generate_ssh_port)
 
 # --- Logging setup ---
 LOG_FILE="/var/log/vps_setup.log"
-# Ensure log file exists with proper permissions
+# Ensure log file exists with proper permissions (640 = root + group only)
 sudo touch "$LOG_FILE"
-sudo chmod 644 "$LOG_FILE"
+sudo chmod 640 "$LOG_FILE"
+sudo chown root:adm "$LOG_FILE"
 exec 1> >(tee -a "$LOG_FILE")
 exec 2> >(tee -a "$LOG_FILE" >&2)
 
@@ -310,10 +311,14 @@ if ! check_state "ssh_configured"; then
     sudo sed -i '/^#*PermitRootLogin/d' /tmp/sshd_config_test
     sudo sed -i '/^#*PasswordAuthentication/d' /tmp/sshd_config_test
     sudo sed -i '/^#*PubkeyAuthentication/d' /tmp/sshd_config_test
+    sudo sed -i '/^#*ChallengeResponseAuthentication/d' /tmp/sshd_config_test
+    sudo sed -i '/^#*UsePAM/d' /tmp/sshd_config_test
     
     echo "PermitRootLogin no" | sudo tee -a /tmp/sshd_config_test > /dev/null
-    echo "PasswordAuthentication yes" | sudo tee -a /tmp/sshd_config_test > /dev/null
     echo "PubkeyAuthentication yes" | sudo tee -a /tmp/sshd_config_test > /dev/null
+    echo "PasswordAuthentication no" | sudo tee -a /tmp/sshd_config_test > /dev/null
+    echo "ChallengeResponseAuthentication no" | sudo tee -a /tmp/sshd_config_test > /dev/null
+    echo "UsePAM yes" | sudo tee -a /tmp/sshd_config_test > /dev/null
     
     # Validate SSH config before applying
     echo "Validating SSH configuration..."
@@ -394,7 +399,7 @@ if ! check_state "fail2ban_configured"; then
     echo "--- Configuring Fail2Ban... ---"
     cat <<EOM | sudo tee /etc/fail2ban/jail.local > /dev/null || rollback "Failed to create Fail2Ban config"
 [DEFAULT]
-bantime = 1h
+bantime = 24h
 findtime = 10m
 maxretry = 5
 banaction = iptables-multiport
