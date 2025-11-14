@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.2.0] - 2025-11-14
 
 ### Added
-- **Custom username support**: Users can now choose their own username during installation (default: prod-dokploy)
+- **Mandatory custom username**: Users MUST choose their own unique username (no default for security)
 - **Manual SSH key configuration**: Users must provide their own SSH public key instead of copying from ubuntu user
 - **SSH_KEY_HELP.md**: Comprehensive guide for finding and generating SSH keys
 - **Username persistence**: Username is saved in `/tmp/new_user_name.txt` for use across scripts
@@ -16,10 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Optional tools section**: Documentation for optional monitoring and security tools
 
 ### Changed
-- **create_user.sh**: Now prompts for username and requires SSH public key input
+- **create_user.sh**: Username is now REQUIRED (no default) with validation
 - **All scripts**: Updated to read username from saved file instead of hardcoded value
-- **install.sh**: Updated prompts to reflect custom username support
-- **Documentation**: Updated README.md and GUIDE.md with new SSH key workflow
+- **install.sh**: Updated prompts to reflect mandatory username selection
+- **Documentation**: Updated README.md and GUIDE.md with new username requirements
 
 ### Improved
 - **Security**: Each user must provide their own SSH key, no automatic copying

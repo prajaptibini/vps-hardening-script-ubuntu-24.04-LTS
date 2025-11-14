@@ -43,7 +43,7 @@ chmod +x *.sh
 ```
 
 **During installation, you will be prompted for:**
-- **Username**: Choose your own or press Enter for default (prod-dokploy)
+- **Username**: Choose your own unique username (REQUIRED - no default)
 - **SSH Public Key**: Paste your SSH public key (from Step 1)
 
 #### Step 4: Reconnect and Setup

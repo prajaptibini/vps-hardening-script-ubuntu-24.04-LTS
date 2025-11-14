@@ -43,11 +43,12 @@ chmod +x *.sh
 
 **You will be prompted for:**
 
-1. **Username** (optional)
+1. **Username** (REQUIRED)
    - Enter your preferred username
-   - Or press Enter to use default: `prod-dokploy`
+   - Must be unique and follow Linux username rules
+   - Examples: admin, devops, myname, etc.
 
-2. **SSH Public Key** (required)
+2. **SSH Public Key** (REQUIRED)
    - Paste your SSH public key from step 1
 
 **The installer will then:**

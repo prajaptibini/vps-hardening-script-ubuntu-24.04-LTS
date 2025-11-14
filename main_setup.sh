@@ -15,7 +15,17 @@ show_setup_banner
 if [ -f /tmp/new_user_name.txt ]; then
     NEW_USER=$(cat /tmp/new_user_name.txt)
 else
-    NEW_USER="prod-dokploy"  # Fallback to default
+    echo ""
+    echo -e "${RED}❌ ERROR: Username file not found!${NC}"
+    echo ""
+    echo "This script must be run after creating a user with create_user.sh or install.sh"
+    echo ""
+    echo "Please run one of these first:"
+    echo "  ./install.sh"
+    echo "  OR"
+    echo "  ./create_user.sh"
+    echo ""
+    exit 1
 fi
 DEFAULT_USER="ubuntu"
 NEW_SSH_PORT=$((RANDOM % 10000 + 50000))  # Random port between 50000-59999

@@ -19,21 +19,53 @@ show_user_banner
 
 show_section "User Configuration"
 
-# Ask for the new username
+# Ask for the new username (REQUIRED - no default)
 echo -e "${CYAN}Choose a username for your new administrative user${NC}"
-echo -e "${GRAY}You can use any username you prefer, or press Enter to use the default.${NC}"
+echo -e "${YELLOW}⚠️  This is REQUIRED - you must choose a unique username${NC}"
+echo -e "${GRAY}Examples: admin, devops, myname, etc.${NC}"
 echo ""
-echo -e "${YELLOW}Default:${NC} prod-dokploy"
-echo ""
-echo -n "Username: "
-read NEW_USER
-NEW_USER=${NEW_USER:-prod-dokploy}
 
-if [ "$NEW_USER" = "prod-dokploy" ]; then
-    echo -e "${GREEN}✓${NC} Using default username: ${CYAN}prod-dokploy${NC}"
-else
-    echo -e "${GREEN}✓${NC} Using custom username: ${CYAN}$NEW_USER${NC}"
-fi
+# Loop until a valid username is provided
+while true; do
+    echo -n "Username: "
+    read NEW_USER
+    
+    # Check if username is empty
+    if [ -z "$NEW_USER" ]; then
+        echo -e "${RED}❌ Username cannot be empty. Please choose a username.${NC}"
+        echo ""
+        continue
+    fi
+    
+    # Check if username is valid (alphanumeric, dash, underscore)
+    if ! [[ "$NEW_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+        echo -e "${RED}❌ Invalid username. Use only lowercase letters, numbers, dash, and underscore.${NC}"
+        echo -e "${GRAY}Must start with a letter or underscore.${NC}"
+        echo ""
+        continue
+    fi
+    
+    # Check if username already exists
+    if id "$NEW_USER" &>/dev/null; then
+        echo -e "${RED}❌ User '$NEW_USER' already exists. Please choose a different username.${NC}"
+        echo ""
+        continue
+    fi
+    
+    # Check if username is a system user (UID < 1000)
+    if [ "$NEW_USER" = "root" ] || [ "$NEW_USER" = "ubuntu" ] || [ "$NEW_USER" = "admin" ]; then
+        echo -e "${YELLOW}⚠️  '$NEW_USER' is a common system username. Choose something more unique for security.${NC}"
+        read -p "Are you sure you want to use '$NEW_USER'? (yes/no): " -r
+        if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
+            echo ""
+            continue
+        fi
+    fi
+    
+    # Username is valid
+    echo -e "${GREEN}✓${NC} Username accepted: ${CYAN}$NEW_USER${NC}"
+    break
+done
 
 echo ""
 show_section "Creating User: $NEW_USER"
