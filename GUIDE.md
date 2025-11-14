@@ -7,7 +7,6 @@ This guide will help you set up a secure Ubuntu 24.04 VPS with Dokploy in minute
 - Ubuntu 24.04 LTS server
 - Root or sudo access
 - SSH access to your server
-- GitHub account (for SSH key authentication)
 
 ## Installation Steps
 
@@ -19,8 +18,10 @@ cat ~/.ssh/id_ed25519.pub
 # or
 cat ~/.ssh/id_rsa.pub
 
-# Copy the entire output - you'll need it in step 4
+# Copy the entire output - you'll need it during installation
 ```
+
+**Don't have an SSH key?** See [SSH_KEY_HELP.md](SSH_KEY_HELP.md)
 
 ### 2. Connect to Your Server
 
@@ -28,57 +29,46 @@ cat ~/.ssh/id_rsa.pub
 ssh ubuntu@your-server-ip
 ```
 
-### 3. Generate SSH Key for GitHub
+### 3. Clone and Install
 
 ```bash
-ssh-keygen -t ed25519 -C "vps@dokploy"
-# Press Enter 3 times to accept defaults
-
-# Display your public key
-cat ~/.ssh/id_ed25519.pub
-```
-
-### 4. Add SSH Key to GitHub
-
-1. Copy the output from the previous command
-2. Go to: https://github.com/settings/keys
-3. Click "New SSH key"
-4. Paste your key and save
-
-### 5. Clone and Install
-
-```bash
-git clone git@github.com:alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
+# Clone repository (HTTPS - no GitHub account needed)
+git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
 cd vps-hardening-script-ubuntu-24.04-LTS
 chmod +x *.sh
 ./install.sh
 ```
 
-### 6. Follow the Prompts
+### 4. Follow the Prompts
 
-The installer will ask you to:
-- Choose a username (default: prod-dokploy)
-- Paste your SSH public key (from step 1)
+**You will be prompted for:**
 
-Then it will:
-- Create the secure user
-- Configure SSH access
+1. **Username** (optional)
+   - Enter your preferred username
+   - Or press Enter to use default: `prod-dokploy`
+
+2. **SSH Public Key** (required)
+   - Paste your SSH public key from step 1
+
+**The installer will then:**
+- Create your secure user
+- Configure SSH key authentication
 - Grant sudo privileges
 
-### 7. Reconnect with New User
+### 5. Reconnect with New User
 
 ```bash
 exit
 ssh <your_username>@your-server-ip
-cd ubuntu-2404-production-deploy
+cd vps-hardening-script-ubuntu-24.04-LTS
 ./main_setup.sh
 ```
 
-### 7. Access Dokploy
+### 6. Access Dokploy
 
 Open in browser: `http://your-server-ip:3000`
 
-### 8. Configure SSL
+### 7. Configure SSL
 
 1. Add your domain in Dokploy
 2. Configure SSL certificate

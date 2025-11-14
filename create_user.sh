@@ -20,11 +20,20 @@ show_user_banner
 show_section "User Configuration"
 
 # Ask for the new username
-echo -e "${CYAN}Enter the name for the new user${NC}"
-echo -e "${GRAY}(Press Enter for default: prod-dokploy)${NC}"
+echo -e "${CYAN}Choose a username for your new administrative user${NC}"
+echo -e "${GRAY}You can use any username you prefer, or press Enter to use the default.${NC}"
+echo ""
+echo -e "${YELLOW}Default:${NC} prod-dokploy"
+echo ""
 echo -n "Username: "
 read NEW_USER
 NEW_USER=${NEW_USER:-prod-dokploy}
+
+if [ "$NEW_USER" = "prod-dokploy" ]; then
+    echo -e "${GREEN}✓${NC} Using default username: ${CYAN}prod-dokploy${NC}"
+else
+    echo -e "${GREEN}✓${NC} Using custom username: ${CYAN}$NEW_USER${NC}"
+fi
 
 echo ""
 show_section "Creating User: $NEW_USER"

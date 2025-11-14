@@ -5,7 +5,7 @@
 set -e
 
 # Configuration
-REPO_URL="${REPO_URL:-git@github.com:alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git}"
+REPO_URL="${REPO_URL:-https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git}"
 INSTALL_DIR="$HOME/vps-hardening"
 DEFAULT_USER="ubuntu"
 
@@ -94,11 +94,13 @@ echo "  ⚠️  IMPORTANT INFORMATION"
 echo "=================================================================="
 echo ""
 echo "This installation will:"
-echo "  1. Create a new secure user (you will choose the username)"
-echo "  2. Configure SSH access with your public key"
-echo "  3. Change SSH port to a random port (50000-59999)"
-echo "  4. Configure firewall (UFW)"
-echo "  5. Install Docker and Dokploy"
+echo "  1. Create a new secure user"
+echo "     → You can choose your username (or use default: prod-dokploy)"
+echo "     → You will provide your SSH public key"
+echo "  2. Change SSH port to a random port (50000-59999)"
+echo "  3. Configure firewall (UFW)"
+echo "  4. Install Docker and Dokploy"
+echo "  5. Install btop system monitor"
 echo "  6. Remove the default 'ubuntu' user"
 echo ""
 echo -e "${YELLOW}⚠️  You will need to reconnect with the new user after step 1${NC}"

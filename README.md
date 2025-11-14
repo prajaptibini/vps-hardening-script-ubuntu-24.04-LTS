@@ -25,47 +25,37 @@ cat ~/.ssh/id_rsa.pub
 # Copy the entire output (starts with ssh-ed25519 or ssh-rsa)
 ```
 
-#### Step 2: Setup SSH Key on VPS (for GitHub access)
-```bash
-# As ubuntu user, generate SSH key for GitHub
-ssh-keygen -t ed25519 -C "vps@dokploy"
-# Press Enter 3 times (accept defaults)
+**Don't have an SSH key?** See [SSH_KEY_HELP.md](SSH_KEY_HELP.md) for instructions.
 
-# Display public key
-cat ~/.ssh/id_ed25519.pub
-# Copy the entire output
+#### Step 2: Connect to Your VPS
+```bash
+# Connect as ubuntu user (default on most VPS)
+ssh ubuntu@<your_vps_ip>
 ```
 
-#### Step 3: Add SSH Key to GitHub
-1. Go to: https://github.com/settings/keys
-2. Click **"New SSH key"**
-3. Title: `VPS Dokploy`
-4. Paste your public key
-5. Click **"Add SSH key"**
-
-#### Step 4: Clone and Install
+#### Step 3: Clone and Install
 ```bash
-# Clone repository with SSH
-git clone git@github.com:alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
+# Clone repository (HTTPS - no SSH key needed)
+git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
 cd vps-hardening-script-ubuntu-24.04-LTS
 chmod +x *.sh
 ./install.sh
 ```
 
-**During installation:**
-- You will be asked to choose a username (default: prod-dokploy)
-- You will need to paste your SSH public key (from Step 1)
+**During installation, you will be prompted for:**
+- **Username**: Choose your own or press Enter for default (prod-dokploy)
+- **SSH Public Key**: Paste your SSH public key (from Step 1)
 
-#### Step 5: Reconnect and Setup
+#### Step 4: Reconnect and Setup
 ```bash
 # Exit current session
 exit
 
 # Reconnect with your new user
-ssh <your_username>@<your_ip>
+ssh <your_username>@<your_vps_ip>
 
-# Clone repository again (for prod-dokploy user)
-git clone git@github.com:alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
+# Clone repository again (for your new user)
+git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
 cd vps-hardening-script-ubuntu-24.04-LTS
 chmod +x *.sh
 ./main_setup.sh
