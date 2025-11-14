@@ -1,5 +1,5 @@
 #!/bin/bash
-# SCRIPT 1: Secure User Creation
+# SCRIPT 1: Secure User Creation (Enhanced with Best Practices)
 
 set -e
 
@@ -9,8 +9,11 @@ source "$SCRIPT_DIR/banner.sh"
 
 DEFAULT_USER="ubuntu"
 
-if [ "$(whoami)" != "$DEFAULT_USER" ]; then
-  echo "ERROR: This script must be run by the user '$DEFAULT_USER'."
+# Check if running as default user OR root (for flexibility)
+CURRENT_USER=$(whoami)
+if [ "$CURRENT_USER" != "$DEFAULT_USER" ] && [ "$CURRENT_USER" != "root" ]; then
+  echo "ERROR: This script must be run by the user '$DEFAULT_USER' or 'root'."
+  echo "Current user: $CURRENT_USER"
   exit 1
 fi
 
@@ -115,9 +118,13 @@ sudo chown -R $NEW_USER:$NEW_USER /home/$NEW_USER/.ssh
 
 echo -e "${GREEN}✅ SSH key configured successfully${NC}"
 
-# Save the username for other scripts
+# Save the username for other scripts (both temp and persistent)
 echo "$NEW_USER" | sudo tee /tmp/new_user_name.txt > /dev/null
 sudo chmod 644 /tmp/new_user_name.txt
+
+# Also save in user's home directory (persistent across reboots)
+sudo -u $NEW_USER bash -c "echo '$NEW_USER' > /home/$NEW_USER/.vps_setup_user"
+sudo chmod 644 /home/$NEW_USER/.vps_setup_user
 
 echo ""
 show_success_banner
@@ -145,15 +152,23 @@ show_info_box "Next Steps" \
     "${BOLD}2.${NC} Test your SSH connection:" \
     "   ${CYAN}ssh $NEW_USER@$PUBLIC_IP${NC}" \
     "" \
-    "${BOLD}3.${NC} If the connection works, disconnect from this session:" \
+    "${BOLD}3.${NC} ${YELLOW}CRITICAL:${NC} Verify you can login successfully!" \
+    "   Try running: ${CYAN}whoami${NC} and ${CYAN}sudo ls${NC}" \
+    "" \
+    "${BOLD}4.${NC} If the connection works, disconnect from this session:" \
     "   ${CYAN}exit${NC}" \
     "" \
-    "${BOLD}4.${NC} Reconnect with the new user and run the main setup:" \
+    "${BOLD}5.${NC} Reconnect with the new user and run the main setup:" \
     "   ${CYAN}cd vps-hardening-script-ubuntu-24.04-LTS${NC}" \
     "   ${CYAN}./main_setup.sh${NC}"
 
-show_warning_box "IMPORTANT" \
-    "Test the new SSH connection before closing this terminal!" \
-    "If you can't connect, you can still fix it from this session."
+show_warning_box "⚠️  CRITICAL SECURITY WARNING" \
+    "DO NOT close this terminal until you verify the new SSH connection works!" \
+    "If you can't connect with the new user, you can still fix it from here." \
+    "" \
+    "Test checklist:" \
+    "  ✓ Can you SSH with the new user?" \
+    "  ✓ Can you run 'sudo' commands?" \
+    "  ✓ Is your SSH key working?"
 
 echo ""
