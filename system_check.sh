@@ -24,9 +24,20 @@ WARNINGS=0
 
 echo "$(date): Running system health check" | sudo tee -a "$LOG_FILE"
 
-# Get public IP
-PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || echo "Unable to detect")
-echo -e "${BLUE}🌍 Public IP: $PUBLIC_IP${NC}"
+# Get public IPs
+IPV4=$(curl -4 -s ifconfig.me 2>/dev/null || echo "")
+IPV6=$(curl -6 -s ifconfig.me 2>/dev/null || echo "")
+
+echo -e "${BLUE}🌍 Public IP:${NC}"
+if [ -n "$IPV4" ]; then
+    echo -e "   IPv4: ${CYAN}$IPV4${NC}"
+fi
+if [ -n "$IPV6" ]; then
+    echo -e "   IPv6: ${CYAN}$IPV6${NC}"
+fi
+if [ -z "$IPV4" ] && [ -z "$IPV6" ]; then
+    echo -e "   ${YELLOW}Unable to detect${NC}"
+fi
 echo ""
 
 # --- User Check ---
@@ -136,7 +147,11 @@ if command -v docker &> /dev/null; then
         HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "000")
         if [[ "$HTTP_CODE" =~ ^(200|301|302)$ ]]; then
             echo -e "   ${GREEN}✅ Dokploy is responding (HTTP $HTTP_CODE)${NC}"
-            echo -e "   ${BLUE}🌐 Access: http://$PUBLIC_IP:3000${NC}"
+            if [ -n "$IPV4" ]; then
+                echo -e "   ${BLUE}🌐 Access: http://$IPV4:3000${NC}"
+            elif [ -n "$IPV6" ]; then
+                echo -e "   ${BLUE}🌐 Access: http://[$IPV6]:3000${NC}"
+            fi
         else
             echo -e "   ${YELLOW}⚠️  Dokploy not responding on port 3000 (HTTP $HTTP_CODE)${NC}"
             WARNINGS=$((WARNINGS + 1))

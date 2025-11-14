@@ -10,9 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Custom username support**: Users can now choose their own username during installation (default: prod-dokploy)
 - **Manual SSH key configuration**: Users must provide their own SSH public key instead of copying from ubuntu user
-- **btop system monitor**: Automatic installation of btop for modern system resource monitoring
 - **SSH_KEY_HELP.md**: Comprehensive guide for finding and generating SSH keys
 - **Username persistence**: Username is saved in `/tmp/new_user_name.txt` for use across scripts
+- **IPv4 and IPv6 detection**: Scripts now detect and display both IPv4 and IPv6 addresses
+- **Optional tools section**: Documentation for optional monitoring and security tools
 
 ### Changed
 - **create_user.sh**: Now prompts for username and requires SSH public key input
@@ -24,7 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security**: Each user must provide their own SSH key, no automatic copying
 - **Flexibility**: Support for custom usernames instead of hardcoded "prod-dokploy"
 - **User experience**: Clear instructions and better prompts during installation
-- **Monitoring**: Added btop for better system resource visualization
+- **Focus**: Removed btop from automatic installation to keep the script focused on security and Dokploy
+
+### Removed
+- **btop automatic installation**: Now optional, users can install it manually if needed
 
 ## [2.1.0] - 2025-11-09
 

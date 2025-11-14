@@ -158,7 +158,6 @@ cat /tmp/ssh_connection_command.txt
 
 ### 📊 Monitoring & Verification
 - System health check script
-- **btop** - Modern system resource monitor
 - Centralized logging with rotation
 - Service status verification
 - Dokploy HTTP response check
@@ -172,7 +171,6 @@ cat /tmp/ssh_connection_command.txt
 - **Simple architecture**: UFW for SSH, Docker for containers
 - **Dokploy verification**: HTTP response validation
 - **Docker daemon**: Production-ready configuration with log rotation
-- **System monitoring**: btop installed for beautiful resource monitoring
 - **Automatic backup**: Before each critical modification
 - **Port 3000 security**: Blocked after SSL setup (iptables persistent)
 - **Configuration template**: .env.example for easy customization
@@ -244,9 +242,6 @@ Scripts include automatic rollback function in case of errors during installatio
 # Complete system check
 ./system_check.sh
 
-# System resource monitor (interactive)
-btop
-
 # Configure Docker daemon (log rotation, storage, network cleanup)
 ./configure_docker.sh
 
@@ -305,6 +300,39 @@ sudo iptables -L DOCKER-USER -n -v
 - ✅ **Maintainability**: Less moving parts, fewer issues
 - ✅ **Security**: Port 3000 blocked after SSL configuration
 
+## 🛠️ Optional Tools
+
+After installation, you may want to install additional monitoring and security tools:
+
+### System Monitoring
+```bash
+# btop - Modern, beautiful resource monitor
+sudo snap install btop
+
+# htop - Classic, lightweight alternative
+sudo apt install htop
+
+# glances - Advanced monitoring with web interface
+sudo apt install glances
+```
+
+### Security Scanning
+```bash
+# lynis - Security auditing tool
+sudo apt install lynis
+sudo lynis audit system
+
+# rkhunter - Rootkit detection
+sudo apt install rkhunter
+sudo rkhunter --check
+```
+
+### Network Tools
+```bash
+# netdata - Real-time performance monitoring
+bash <(curl -Ss https://my-netdata.io/kickstart.sh)
+```
+
 ## 🎯 Tested & Verified
 
 - ✅ Ubuntu 24.04 LTS
@@ -316,5 +344,5 @@ sudo iptables -L DOCKER-USER -n -v
 ---
 
 **Status**: ✅ Production Ready  
-**Last Update**: 2025-10-04  
+**Last Update**: 2025-11-14  
 **Tested on**: Ubuntu 24.04 LTS

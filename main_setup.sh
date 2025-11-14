@@ -142,10 +142,7 @@ sudo apt-get update || rollback "Failed to update package list"
 sudo apt-get upgrade -y || rollback "Failed to upgrade packages"
 echo "$(date): System packages updated successfully" | sudo tee -a "$LOG_FILE"
 
-# --- 2.1. Install System Monitoring Tools ---
-echo "--- Installing system monitoring tools (btop)... ---"
-sudo snap install btop || echo "⚠️  Warning: Could not install btop via snap"
-echo "$(date): System monitoring tools installed" | sudo tee -a "$LOG_FILE"
+
 
 # --- 3. Change SSH Port ---
 echo "--- Changing the default SSH port to $NEW_SSH_PORT... ---"
@@ -387,7 +384,17 @@ fi
 # --- End of script ---
 echo "$(date): VPS setup completed successfully" | sudo tee -a "$LOG_FILE"
 
-PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || echo '<your_ip>')
+# Detect both IPv4 and IPv6
+IPV4=$(curl -4 -s ifconfig.me 2>/dev/null || echo "")
+IPV6=$(curl -6 -s ifconfig.me 2>/dev/null || echo "")
+
+if [ -n "$IPV4" ]; then
+    PUBLIC_IP="$IPV4"
+elif [ -n "$IPV6" ]; then
+    PUBLIC_IP="$IPV6"
+else
+    PUBLIC_IP="<your_server_ip>"
+fi
 
 echo ""
 show_success_banner
@@ -406,7 +413,6 @@ show_info_box "Completed Configurations" \
     "${GREEN}✓${NC} Fail2Ban enabled" \
     "${GREEN}✓${NC} Automatic updates configured" \
     "${GREEN}✓${NC} Docker with log rotation" \
-    "${GREEN}✓${NC} btop system monitor installed" \
     "${GREEN}✓${NC} Dokploy installed and running"
 
 show_info_box "Next Steps" \
@@ -422,9 +428,7 @@ show_info_box "Next Steps" \
     "" \
     "${BOLD}5.${NC} Verify system health:" \
     "   ${CYAN}./system_check.sh${NC}" \
-    "" \
-    "${BOLD}6.${NC} Monitor system resources:" \
-    "   ${CYAN}btop${NC}"
+
 
 show_info_box "Important Notes" \
     "• Docker logs are rotated (max 30MB per container)" \
@@ -435,6 +439,5 @@ show_info_box "Important Notes" \
 echo ""
 echo "TROUBLESHOOTING:"
 echo "   - System health: ./system_check.sh"
-echo "   - Resource monitor: btop"
 echo ""
 echo "=================================================================="

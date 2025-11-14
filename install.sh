@@ -85,7 +85,21 @@ echo "=================================================================="
 echo ""
 echo "Installation directory: $INSTALL_DIR"
 echo "Current user: $(whoami)"
-echo "Public IP: $(curl -s ifconfig.me 2>/dev/null || echo 'Unable to detect')"
+
+# Detect both IPv4 and IPv6
+IPV4=$(curl -4 -s ifconfig.me 2>/dev/null || echo "")
+IPV6=$(curl -6 -s ifconfig.me 2>/dev/null || echo "")
+
+if [ -n "$IPV4" ]; then
+    echo "Public IPv4: $IPV4"
+fi
+if [ -n "$IPV6" ]; then
+    echo "Public IPv6: $IPV6"
+fi
+if [ -z "$IPV4" ] && [ -z "$IPV6" ]; then
+    echo "Public IP: Unable to detect"
+fi
+
 echo ""
 
 # Ask for confirmation
@@ -95,13 +109,12 @@ echo "=================================================================="
 echo ""
 echo "This installation will:"
 echo "  1. Create a new secure user"
-echo "     → You can choose your username (or use default: prod-dokploy)"
-echo "     → You will provide your SSH public key"
+echo "     → Choose your username or use default: prod-dokploy"
+echo "     → Provide your SSH public key"
 echo "  2. Change SSH port to a random port (50000-59999)"
 echo "  3. Configure firewall (UFW)"
 echo "  4. Install Docker and Dokploy"
-echo "  5. Install btop system monitor"
-echo "  6. Remove the default 'ubuntu' user"
+echo "  5. Remove the default 'ubuntu' user"
 echo ""
 echo -e "${YELLOW}⚠️  You will need to reconnect with the new user after step 1${NC}"
 echo ""
@@ -140,7 +153,13 @@ echo "1. Disconnect from this session:"
 echo "   exit"
 echo ""
 echo "2. Reconnect with the new user:"
-echo "   ssh $CREATED_USER@$(curl -s ifconfig.me 2>/dev/null)"
+if [ -n "$IPV4" ]; then
+    echo "   ssh $CREATED_USER@$IPV4"
+elif [ -n "$IPV6" ]; then
+    echo "   ssh $CREATED_USER@$IPV6"
+else
+    echo "   ssh $CREATED_USER@<your_server_ip>"
+fi
 echo ""
 echo "3. Navigate to the installation directory:"
 echo "   cd $INSTALL_DIR"

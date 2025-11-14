@@ -95,7 +95,17 @@ show_info_box "User Configuration Summary" \
     "Sudo access: ${GREEN}Enabled${NC}" \
     "SSH key: ${GREEN}Configured${NC}"
 
-PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || echo '<your_ip>')
+# Detect both IPv4 and IPv6
+IPV4=$(curl -4 -s ifconfig.me 2>/dev/null || echo "")
+IPV6=$(curl -6 -s ifconfig.me 2>/dev/null || echo "")
+
+if [ -n "$IPV4" ]; then
+    PUBLIC_IP="$IPV4"
+elif [ -n "$IPV6" ]; then
+    PUBLIC_IP="$IPV6"
+else
+    PUBLIC_IP="<your_server_ip>"
+fi
 
 show_info_box "Next Steps" \
     "${BOLD}1.${NC} Open a ${YELLOW}NEW${NC} terminal window (keep this one open!)" \
