@@ -281,7 +281,43 @@ else
     echo "--- UFW already configured, skipping... ---"
 fi
 
-# --- 4. Change SSH Port ---
+# --- 4. Configure Secure DNS (Quad9 with DoT) ---
+if ! check_state "dns_configured"; then
+    echo "--- Configuring secure DNS with Quad9 (DNS over TLS)... ---"
+    
+    # Backup existing resolved.conf
+    if [ -f /etc/systemd/resolved.conf ]; then
+        sudo cp /etc/systemd/resolved.conf /etc/systemd/resolved.conf.bak.$(date +%Y%m%d_%H%M%S)
+    fi
+    
+    # Configure systemd-resolved with Quad9 DoT
+    cat <<EOF | sudo tee /etc/systemd/resolved.conf > /dev/null
+[Resolve]
+DNS=9.9.9.9#dns.quad9.net 149.112.112.112#dns.quad9.net
+FallbackDNS=1.1.1.1 8.8.8.8
+DNSOverTLS=yes
+DNSSEC=yes
+Cache=yes
+DNSStubListener=yes
+EOF
+    
+    # Restart systemd-resolved
+    sudo systemctl restart systemd-resolved || rollback "Failed to restart systemd-resolved"
+    
+    # Verify DNS is working
+    if resolvectl status &>/dev/null; then
+        echo "✅ DNS configured with Quad9 (encrypted with TLS + DNSSEC)"
+    else
+        echo "⚠️ DNS configured but verification failed (may still work)"
+    fi
+    
+    save_state "dns_configured"
+    echo "$(date): Secure DNS configured successfully" | sudo tee -a "$LOG_FILE"
+else
+    echo "--- DNS already configured, skipping... ---"
+fi
+
+# --- 5. Change SSH Port ---
 if ! check_state "ssh_configured"; then
     echo "--- Changing the default SSH port to $NEW_SSH_PORT... ---"
     
@@ -394,7 +430,7 @@ else
     echo "--- SSH already configured, skipping... ---"
 fi
 
-# --- 5. Configure Fail2Ban ---
+# --- 6. Configure Fail2Ban ---
 if ! check_state "fail2ban_configured"; then
     echo "--- Configuring Fail2Ban... ---"
     cat <<EOM | sudo tee /etc/fail2ban/jail.local > /dev/null || rollback "Failed to create Fail2Ban config"
@@ -421,7 +457,7 @@ else
     echo "--- Fail2Ban already configured, skipping... ---"
 fi
 
-# --- 6. Configure Automatic Security Updates ---
+# --- 7. Configure Automatic Security Updates ---
 if ! check_state "auto_updates_configured"; then
     echo "--- Configuring automatic security updates... ---"
     sudo apt-get install -y unattended-upgrades apt-listchanges || rollback "Failed to install unattended-upgrades"
@@ -464,7 +500,7 @@ else
     echo "--- Automatic updates already configured, skipping... ---"
 fi
 
-# --- 7. Install and Configure Docker ---
+# --- 8. Install and Configure Docker ---
 if ! check_state "docker_installed"; then
     echo "--- Installing Docker... ---"
     
@@ -493,7 +529,7 @@ else
     echo "--- Docker already installed, skipping... ---"
 fi
 
-# --- 8. Configure Docker daemon ---
+# --- 9. Configure Docker daemon ---
 if ! check_state "docker_configured"; then
     echo "--- Configuring Docker daemon... ---"
     sudo mkdir -p /etc/docker
@@ -547,7 +583,7 @@ else
     echo "--- Docker daemon already configured, skipping... ---"
 fi
 
-# --- 9. Install Dokploy ---
+# --- 10. Install Dokploy ---
 if ! check_state "dokploy_installed"; then
     echo "--- Starting Dokploy installation... ---"
     
@@ -631,7 +667,7 @@ echo "$NEW_SSH_PORT" | sudo tee /tmp/ssh_port_info.txt > /dev/null
 echo "ssh $NEW_USER@<your_ip> -p $NEW_SSH_PORT" | sudo tee /tmp/ssh_connection_command.txt > /dev/null
 sudo chmod 644 /tmp/ssh_port_info.txt /tmp/ssh_connection_command.txt
 
-# --- 10. Test SSH Connection Before Removing Default User ---
+# --- 11. Test SSH Connection Before Removing Default User ---
 echo ""
 echo "=================================================================="
 echo "  🔐 CRITICAL: SSH Connection Test Required"
@@ -690,7 +726,7 @@ if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
     exit 0
 fi
 
-# --- 11. Finalize SSH Configuration ---
+# --- 12. Finalize SSH Configuration ---
 echo "--- Finalizing SSH configuration... ---"
 
 # Remove port 22 from SSH config (keep only new port)
@@ -707,7 +743,7 @@ fi
 sudo ufw delete allow 22/tcp
 echo "✅ Port 22 disabled, only port $NEW_SSH_PORT is active"
 
-# --- 12. Remove Default User ---
+# --- 13. Remove Default User ---
 if getent passwd $DEFAULT_USER > /dev/null; then
     echo "--- Removing the default user '$DEFAULT_USER'... ---"
     
