@@ -52,11 +52,13 @@ chmod +x *.sh
 ./main_setup.sh
 ```
 
-**4. Follow the prompts**:
-- Choose your username
-- Paste your SSH public key
-- Test the new connection
-- Run `./main_setup.sh`
+**4. Run the setup**:
+```bash
+git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
+cd vps-hardening-script-ubuntu-24.04-LTS
+chmod +x *.sh
+./main_setup.sh
+```
 
 **5. Access Dokploy**:
 ```
