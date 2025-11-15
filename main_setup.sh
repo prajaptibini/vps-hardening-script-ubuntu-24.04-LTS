@@ -168,8 +168,8 @@ check_prerequisites() {
     # Check if running as correct user
     CURRENT_USER=$(whoami)
     if [ "$CURRENT_USER" != "$NEW_USER" ]; then
-        echo "⚠️  Warning: Running as '$CURRENT_USER' but expected '$NEW_USER'"
-        echo "This may cause issues with file permissions."
+        echo "⚠️  Warning: Running as '$CURRENT_USER' but setup was configured for '$NEW_USER'"
+        echo "This may cause issues with file permissions and paths."
         read -p "Continue anyway? (yes/no): " -r
         if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
             rollback "User mismatch - please run as $NEW_USER"
@@ -830,7 +830,7 @@ show_info_box "Important Notes" \
     "• Docker logs are rotated (max 30MB per container)" \
     "• Docker ports (3000, 80, 443) are open by default" \
     "• All changes logged to: ${GRAY}$LOG_FILE${NC}" \
-    "• Default user '${GRAY}ubuntu${NC}' has been removed" \
+    "• Original user '${GRAY}$DEFAULT_USER${NC}' has been removed" \
     "• SSH port 22 is now DISABLED (only $NEW_SSH_PORT works)" \
     "• Setup state saved in: ${GRAY}$STATE_DIR${NC}"
 

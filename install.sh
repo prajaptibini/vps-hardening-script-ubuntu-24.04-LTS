@@ -49,7 +49,7 @@ if [ "$CURRENT_USER" != "root" ]; then
 fi
 
 if [ "$CURRENT_USER" != "$DEFAULT_USER" ] && [ "$CURRENT_USER" != "root" ]; then
-    echo -e "${YELLOW}⚠️  Running as '$CURRENT_USER' (not default 'ubuntu')${NC}"
+    echo -e "${YELLOW}⚠️  Running as '$CURRENT_USER'${NC}"
     echo "Continuing with sudo privileges..."
     echo ""
 fi
@@ -125,7 +125,7 @@ echo "     → Provide your SSH public key"
 echo "  2. Change SSH port to a random port (50000-59999)"
 echo "  3. Configure firewall (UFW)"
 echo "  4. Install Docker and Dokploy"
-echo "  5. Remove the default 'ubuntu' user"
+echo "  5. Remove the current default user (if exists)"
 echo ""
 echo -e "${YELLOW}⚠️  You will need to reconnect with the new user after step 1${NC}"
 echo ""
