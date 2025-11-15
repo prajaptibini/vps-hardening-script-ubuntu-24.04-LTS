@@ -290,11 +290,11 @@ if ! check_state "dns_configured"; then
         sudo cp /etc/systemd/resolved.conf /etc/systemd/resolved.conf.bak.$(date +%Y%m%d_%H%M%S)
     fi
     
-    # Configure systemd-resolved with Quad9 DoT
+    # Configure systemd-resolved with Quad9 DoT (ECS enabled for better CDN performance)
     cat <<EOF | sudo tee /etc/systemd/resolved.conf > /dev/null
 [Resolve]
-DNS=9.9.9.9#dns.quad9.net 149.112.112.112#dns.quad9.net
-FallbackDNS=1.1.1.1 8.8.8.8
+DNS=9.9.9.11#dns11.quad9.net 149.112.112.11#dns11.quad9.net 2620:fe::11#dns11.quad9.net 2620:fe::fe:11#dns11.quad9.net
+FallbackDNS=9.9.9.9#dns.quad9.net 149.112.112.112#dns.quad9.net 2620:fe::fe#dns.quad9.net 2620:fe::9#dns.quad9.net
 DNSOverTLS=yes
 DNSSEC=yes
 Cache=yes
@@ -306,7 +306,7 @@ EOF
     
     # Verify DNS is working
     if resolvectl status &>/dev/null; then
-        echo "✅ DNS configured with Quad9 (encrypted with TLS + DNSSEC)"
+        echo "✅ DNS configured with Quad9 ECS (IPv4 + IPv6, TLS encrypted, DNSSEC, CDN optimized)"
     else
         echo "⚠️ DNS configured but verification failed (may still work)"
     fi
