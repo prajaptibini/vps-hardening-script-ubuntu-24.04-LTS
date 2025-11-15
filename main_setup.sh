@@ -211,11 +211,20 @@ check_prerequisites() {
     
     # Verify critical commands exist
     echo "→ Checking required commands..."
-    for cmd in curl git systemctl ufw iptables; do
+    for cmd in curl git systemctl iptables; do
         if ! command -v $cmd &> /dev/null; then
             rollback "Required command not found: $cmd"
         fi
     done
+    
+    # Check UFW separately - install if missing (might have been removed by previous failed setup)
+    if ! command -v ufw &> /dev/null; then
+        echo "  ⚠️  UFW not found, installing..."
+        sudo apt-get update -qq
+        sudo apt-get install -y ufw || rollback "Failed to install UFW"
+        echo "  ✅ UFW installed"
+    fi
+    
     echo "  ✅ All required commands available"
     
     echo "✅ All prerequisites passed"
