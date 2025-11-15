@@ -44,20 +44,30 @@ cat ~/.ssh/id_ed25519.pub
 ssh ubuntu@YOUR_VPS_IP
 ```
 
-**3. Download and setup**:
+**3. Download and run installer**:
 ```bash
+git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
+cd vps-hardening-script-ubuntu-24.04-LTS
+chmod +x *.sh
+./install.sh
+```
+
+**4. Connect with your new user and run the main setup**:
+```bash
+# SSH with the new user created in step 3
+ssh your_new_user@YOUR_VPS_IP
+
+# Then run:
 git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
 cd vps-hardening-script-ubuntu-24.04-LTS
 chmod +x *.sh
 ./main_setup.sh
 ```
-
-**4. Follow the interactive prompts**:
-- The script will update your system
-- Install security tools (UFW, Fail2Ban)
-- Configure a custom SSH port (50000-59999)
-- Install Docker and Dokploy
-- You'll be asked to test your SSH connection before finalizing
+Follow the interactive prompts:
+- System update and security tools installation
+- Custom SSH port configuration (50000-59999)
+- Docker and Dokploy installation
+- SSH connection test before finalizing
 - Confirm when SSH works on the new port
 
 **5. Access Dokploy**:
