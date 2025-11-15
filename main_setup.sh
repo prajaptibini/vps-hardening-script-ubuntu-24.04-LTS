@@ -549,10 +549,20 @@ else
 fi
 
 # --- 9. Configure Docker daemon ---
-if ! check_state "docker_configured"; then
-    echo "--- Configuring Docker daemon... ---"
-    sudo mkdir -p /etc/docker
-    
+echo "--- Configuring Docker daemon... ---"
+sudo mkdir -p /etc/docker
+
+# Check if current config has live-restore (incompatible with Swarm)
+NEEDS_RECONFIG=false
+if [ -f /etc/docker/daemon.json ]; then
+    if grep -q '"live-restore"' /etc/docker/daemon.json; then
+        echo "⚠️  Detected live-restore in config (incompatible with Dokploy/Swarm)"
+        NEEDS_RECONFIG=true
+    fi
+fi
+
+# Configure if not done yet OR if needs reconfiguration
+if ! check_state "docker_configured" || [ "$NEEDS_RECONFIG" = true ]; then
     # Backup existing daemon.json if it exists
     if [ -f /etc/docker/daemon.json ]; then
         sudo cp /etc/docker/daemon.json /etc/docker/daemon.json.bak.$(date +%Y%m%d_%H%M%S)
@@ -580,6 +590,8 @@ if ! check_state "docker_configured"; then
 }
 EOF
     
+    echo "✅ Docker daemon.json created/updated"
+    
     # Restart Docker to apply configuration
     sudo systemctl restart docker || rollback "Failed to restart Docker"
     
@@ -596,10 +608,16 @@ EOF
         sleep 1
     done
     
+    # Verify live-restore is disabled
+    if sudo docker info | grep -q "Live Restore Enabled: true"; then
+        echo "❌ live-restore still enabled after config!"
+        rollback "Failed to disable live-restore"
+    fi
+    
     save_state "docker_configured"
-    echo "✅ Docker daemon configured with production settings."
+    echo "✅ Docker daemon configured with production settings (Swarm-compatible)."
 else
-    echo "--- Docker daemon already configured, skipping... ---"
+    echo "✅ Docker daemon already properly configured"
 fi
 
 # --- 10. Install Dokploy ---
