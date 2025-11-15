@@ -560,6 +560,7 @@ if ! check_state "docker_configured"; then
     fi
     
     # Create production-ready Docker daemon configuration
+    # Note: live-restore is disabled because it's incompatible with Docker Swarm (used by Dokploy)
     cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
 {
   "log-driver": "json-file",
@@ -575,8 +576,7 @@ if ! check_state "docker_configured"; then
     }
   ],
   "userland-proxy": false,
-  "iptables": true,
-  "live-restore": true
+  "iptables": true
 }
 EOF
     
