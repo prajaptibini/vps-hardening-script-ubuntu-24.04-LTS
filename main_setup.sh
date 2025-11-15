@@ -244,10 +244,15 @@ if ! check_state "security_tools_installed"; then
     # Install UFW and Fail2Ban first (these are critical)
     sudo apt-get install -y ufw fail2ban || rollback "Failed to install UFW and Fail2Ban"
     
+    # Pre-configure iptables-persistent to avoid interactive prompts
+    echo "→ Pre-configuring iptables-persistent..."
+    echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+    echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+    
     # Try to install iptables-persistent, but don't fail if it has dependency issues
     # We'll handle iptables persistence manually if needed
     echo "→ Attempting to install iptables-persistent..."
-    if sudo apt-get install -y iptables-persistent 2>/dev/null; then
+    if sudo DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent 2>/dev/null; then
         echo "  ✅ iptables-persistent installed"
     else
         echo "  ⚠️  iptables-persistent has dependency issues, will use alternative method"
