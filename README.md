@@ -106,9 +106,11 @@ http://YOUR_VPS_IP:3000
 - **Custom SSH port** (50000-59999) with dual-port safety during migration
 - **Interactive testing** before removing default user
 - **UFW firewall** configured before Docker (prevents bypass)
-- **Fail2Ban** monitors SSH attempts
+- **Fail2Ban** monitors SSH attempts (24h ban)
 - **Root login disabled**
+- **SSH key-only authentication**
 - **Automatic security updates**
+- **Secure DNS** with Quad9 (encrypted, malware blocking)
 
 ### 🐳 Docker Production-Ready
 - Log rotation (10MB max, 3 files)
@@ -116,6 +118,14 @@ http://YOUR_VPS_IP:3000
 - Live-restore enabled
 - Health checks before deployment
 - Network cleanup automation
+
+### 🌐 Secure DNS (Quad9)
+- **DNS over TLS** - All queries encrypted
+- **DNSSEC** - Prevents DNS spoofing
+- **Malware blocking** - Automatic protection
+- **ECS enabled** - Optimized CDN performance
+- **IPv4 + IPv6** - Dual-stack ready
+- **8 DNS servers** - Maximum redundancy
 
 ### 🛡️ Bulletproof Error Handling
 - **State management** - Resume from any step
@@ -216,6 +226,21 @@ sudo docker ps
 
 * Port 3000 blocked externally after SSL setup
 ```
+
+### 🌐 DNS Configuration
+
+**Quad9 with DNS over TLS (DoT)**
+
+| Type | Servers | Features |
+|------|---------|----------|
+| **Primary** | 9.9.9.11, 149.112.112.11<br>2620:fe::11, 2620:fe::fe:11 | ECS enabled (CDN optimized) |
+| **Fallback** | 9.9.9.9, 149.112.112.112<br>2620:fe::fe, 2620:fe::9 | Standard (more privacy) |
+
+**All DNS servers include:**
+- ✅ Malware/phishing blocking
+- ✅ DNSSEC validation
+- ✅ TLS encryption
+- ✅ IPv4 + IPv6 support
 
 **Why this works:**
 - UFW handles SSH (simple, reliable)
