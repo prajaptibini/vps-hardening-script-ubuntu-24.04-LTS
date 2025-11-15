@@ -49,7 +49,7 @@ ssh ubuntu@YOUR_VPS_IP
 git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
 cd vps-hardening-script-ubuntu-24.04-LTS
 chmod +x *.sh
-./install.sh
+./main_setup.sh
 ```
 
 **4. Follow the prompts**:
