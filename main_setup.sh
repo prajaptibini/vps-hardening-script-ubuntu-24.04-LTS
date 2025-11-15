@@ -166,8 +166,14 @@ check_prerequisites() {
     echo "--- Checking prerequisites... ---"
     
     # Check if running as correct user
-    if [ "$(whoami)" != "$NEW_USER" ]; then
-        rollback "Must be run as user $NEW_USER"
+    CURRENT_USER=$(whoami)
+    if [ "$CURRENT_USER" != "$NEW_USER" ]; then
+        echo "⚠️  Warning: Running as '$CURRENT_USER' but expected '$NEW_USER'"
+        echo "This may cause issues with file permissions."
+        read -p "Continue anyway? (yes/no): " -r
+        if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
+            rollback "User mismatch - please run as $NEW_USER"
+        fi
     fi
     
     # Check internet connectivity (multiple targets)

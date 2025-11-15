@@ -36,11 +36,22 @@ else
     echo ""
 fi
 
-# Check if running as default user
-if [ "$(whoami)" != "$DEFAULT_USER" ]; then
-    echo -e "${RED}❌ Error: This script must be run as user '$DEFAULT_USER'${NC}"
-    echo "Current user: $(whoami)"
-    exit 1
+# Check if running with sudo privileges (accept any user with sudo)
+CURRENT_USER=$(whoami)
+if [ "$CURRENT_USER" != "root" ]; then
+    if ! sudo -n true 2>/dev/null && ! sudo -v 2>/dev/null; then
+        echo -e "${RED}❌ Error: This script requires sudo privileges${NC}"
+        echo "Current user: $CURRENT_USER"
+        echo ""
+        echo "Please run as a user with sudo access (ubuntu, root, or any sudo user)"
+        exit 1
+    fi
+fi
+
+if [ "$CURRENT_USER" != "$DEFAULT_USER" ] && [ "$CURRENT_USER" != "root" ]; then
+    echo -e "${YELLOW}⚠️  Running as '$CURRENT_USER' (not default 'ubuntu')${NC}"
+    echo "Continuing with sudo privileges..."
+    echo ""
 fi
 
 # Check prerequisites

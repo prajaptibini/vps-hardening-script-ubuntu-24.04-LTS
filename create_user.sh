@@ -11,10 +11,19 @@ DEFAULT_USER="ubuntu"
 
 # Check if running as default user OR root (for flexibility)
 CURRENT_USER=$(whoami)
+
+# Allow ubuntu, root, or any user with sudo privileges
 if [ "$CURRENT_USER" != "$DEFAULT_USER" ] && [ "$CURRENT_USER" != "root" ]; then
-  echo "ERROR: This script must be run by the user '$DEFAULT_USER' or 'root'."
-  echo "Current user: $CURRENT_USER"
-  exit 1
+  # Check if user has sudo privileges
+  if ! sudo -n true 2>/dev/null && ! sudo -v 2>/dev/null; then
+    echo "ERROR: This script must be run by a user with sudo privileges."
+    echo "Current user: $CURRENT_USER"
+    echo ""
+    echo "Allowed users: ubuntu, root, or any user with sudo access"
+    exit 1
+  fi
+  echo "⚠️  Running as '$CURRENT_USER' (not default 'ubuntu' user)"
+  echo "Continuing with sudo privileges..."
 fi
 
 # Show banner
