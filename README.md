@@ -14,6 +14,7 @@
 Transforms a fresh Ubuntu VPS into a **secure, production-ready server** with:
 - ✅ Hardened SSH configuration (custom port, key-only auth)
 - ✅ Firewall (UFW) + intrusion prevention (Fail2Ban)
+- ✅ Secure DNS with Quad9 (encrypted, malware blocking)
 - ✅ Docker with production settings
 - ✅ Dokploy deployment platform
 - ✅ Automatic security updates
