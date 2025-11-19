@@ -18,8 +18,11 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Check for root/sudo
-check_root
+# Check for root/sudo (but allow regular user to run it, will ask for sudo when needed)
+if [ "$(id -u)" -eq 0 ]; then
+    echo -e "${YELLOW}⚠️  Running as root. It's recommended to run as a regular user.${NC}"
+    echo ""
+fi
 
 # Main Menu Loop
 while true; do
@@ -72,11 +75,19 @@ EOF
     
     case $choice in
         1)
-            ./main_setup.sh
+            if [ -f "./main_setup.sh" ]; then
+                ./main_setup.sh
+            else
+                echo -e "${RED}Error: main_setup.sh not found!${NC}"
+            fi
             read -p "Press Enter to return to menu..."
             ;;
         2)
-            ./create_user.sh
+            if [ -f "./create_user.sh" ]; then
+                ./create_user.sh
+            else
+                echo -e "${RED}Error: create_user.sh not found!${NC}"
+            fi
             read -p "Press Enter to return to menu..."
             ;;
         3)
@@ -88,15 +99,27 @@ EOF
             read -p "Press Enter to return to menu..."
             ;;
         4)
-            ./post_ssl_setup.sh
+            if [ -f "./post_ssl_setup.sh" ]; then
+                ./post_ssl_setup.sh
+            else
+                echo -e "${RED}Error: post_ssl_setup.sh not found!${NC}"
+            fi
             read -p "Press Enter to return to menu..."
             ;;
         5)
-            ./system_check.sh
+            if [ -f "./system_check.sh" ]; then
+                ./system_check.sh
+            else
+                echo -e "${RED}Error: system_check.sh not found!${NC}"
+            fi
             read -p "Press Enter to return to menu..."
             ;;
         6)
-            ./configure_docker.sh
+            if [ -f "./configure_docker.sh" ]; then
+                ./configure_docker.sh
+            else
+                echo -e "${RED}Error: configure_docker.sh not found!${NC}"
+            fi
             read -p "Press Enter to return to menu..."
             ;;
         7)

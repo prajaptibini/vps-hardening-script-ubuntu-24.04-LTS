@@ -188,6 +188,20 @@ else
     CREATED_USER="prod-dokploy"
 fi
 
+# Copy installation directory to new user's home
+echo ""
+echo "→ Copying installation files to new user's home directory..."
+NEW_USER_INSTALL_DIR="/home/$CREATED_USER/vps-hardening-script-ubuntu-24.04-LTS"
+
+if [ -d "$INSTALL_DIR" ]; then
+    sudo cp -r "$INSTALL_DIR" "$NEW_USER_INSTALL_DIR"
+    sudo chown -R $CREATED_USER:$CREATED_USER "$NEW_USER_INSTALL_DIR"
+    sudo chmod +x "$NEW_USER_INSTALL_DIR"/*.sh
+    echo "✅ Installation files copied to $NEW_USER_INSTALL_DIR"
+else
+    echo "⚠️  Warning: Could not copy installation directory"
+fi
+
 echo ""
 echo "=================================================================="
 echo "  ✅ User created successfully!"
@@ -208,12 +222,16 @@ else
 fi
 echo ""
 echo "3. Navigate to the installation directory:"
-echo "   cd $INSTALL_DIR"
+DIRNAME=$(basename "$INSTALL_DIR")
+echo "   cd ~/$DIRNAME"
 echo ""
-echo "4. Run the main menu to start configuration:"
-echo "   sudo ./menu.sh"
+echo "4. Run the main setup:"
+echo "   ./main_setup.sh"
+echo ""
+echo "   OR use the interactive menu:"
+echo "   ./menu.sh"
 echo ""
 echo "=================================================================="
 echo ""
-echo "💡 TIP: Save your SSH connection command for later!"
+echo -e "${GREEN}💡 TIP: The scripts are automatically copied to your new user's home directory!${NC}"
 echo ""

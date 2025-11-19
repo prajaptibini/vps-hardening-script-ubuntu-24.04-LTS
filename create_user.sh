@@ -238,6 +238,27 @@ sudo chmod 644 /tmp/new_user_name.txt
 sudo -u $NEW_USER bash -c "echo '$NEW_USER' > /home/$NEW_USER/.vps_setup_user"
 sudo chmod 644 /home/$NEW_USER/.vps_setup_user
 
+# Copy installation scripts to new user's home directory
+echo ""
+echo "→ Copying installation scripts to new user's home directory..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -d "$SCRIPT_DIR" ]; then
+    # Copy the entire directory to new user's home
+    sudo cp -r "$SCRIPT_DIR" "/home/$NEW_USER/" || {
+        echo "⚠️  Warning: Could not copy scripts to new user's home"
+        echo "You can manually copy them later with:"
+        echo "  sudo cp -r $SCRIPT_DIR /home/$NEW_USER/"
+    }
+    
+    # Set proper ownership
+    DIRNAME=$(basename "$SCRIPT_DIR")
+    sudo chown -R $NEW_USER:$NEW_USER "/home/$NEW_USER/$DIRNAME" 2>/dev/null || true
+    
+    echo "✅ Scripts copied to /home/$NEW_USER/$DIRNAME"
+else
+    echo "⚠️  Warning: Could not determine script directory"
+fi
+
 echo ""
 show_success_banner
 
@@ -258,6 +279,8 @@ else
     PUBLIC_IP="<your_server_ip>"
 fi
 
+DIRNAME=$(basename "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")
+
 show_info_box "Next Steps" \
     "${BOLD}1.${NC} Open a ${YELLOW}NEW${NC} terminal window (keep this one open!)" \
     "" \
@@ -271,8 +294,10 @@ show_info_box "Next Steps" \
     "   ${CYAN}exit${NC}" \
     "" \
     "${BOLD}5.${NC} Reconnect with the new user and run the main setup:" \
-    "   ${CYAN}cd vps-hardening-script-ubuntu-24.04-LTS${NC}" \
-    "   ${CYAN}./main_setup.sh${NC}"
+    "   ${CYAN}cd $DIRNAME${NC}" \
+    "   ${CYAN}./main_setup.sh${NC}" \
+    "" \
+    "${GRAY}Scripts are already copied to your home directory!${NC}"
 
 show_warning_box "⚠️  CRITICAL SECURITY WARNING" \
     "DO NOT close this terminal until you verify the new SSH connection works!" \

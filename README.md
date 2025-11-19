@@ -22,18 +22,62 @@
 ## 🚀 Quick Start
 
 ### 1. One-Command Installation
-Run this on your fresh Ubuntu 24.04 VPS:
+Run this on your fresh Ubuntu 24.04 VPS as the default user (ubuntu):
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS/main/install.sh | bash
 ```
 
-### 2. Using the Menu
-After installation, launch the main menu to configure your server:
+**This will:**
+- Create a secure admin user with SSH key authentication
+- Copy all scripts to the new user's home directory
+- Ask you to test the SSH connection
+
+### 2. Reconnect and Continue Setup
+After testing your SSH connection with the new user:
 
 ```bash
-cd ~/vps-hardening
-sudo ./menu.sh
+# Reconnect with your new user
+ssh your-new-user@your-server-ip
+
+# Navigate to the scripts directory
+cd ~/vps-hardening-script-ubuntu-24.04-LTS
+
+# Run the main setup
+./main_setup.sh
+
+# OR use the interactive menu
+./menu.sh
+```
+
+**This will:**
+- Change SSH port to a random high port (50000-59999)
+- Configure UFW firewall
+- Install and configure Docker + Dokploy
+- Enable Fail2Ban and automatic security updates
+- Remove the default ubuntu user
+
+### 2. Reconnect with Your New User
+```bash
+ssh your-new-user@your-server-ip
+```
+
+### 3. Run the Main Setup
+```bash
+cd ~/vps-hardening-script-ubuntu-24.04-LTS
+./main_setup.sh
+```
+
+**Or use the interactive menu:**
+```bash
+cd ~/vps-hardening-script-ubuntu-24.04-LTS
+./menu.sh
+```
+
+**Or use the quick start script:**
+```bash
+cd ~/vps-hardening-script-ubuntu-24.04-LTS
+./quick_start.sh
 ```
 
 ## 📋 Menu Options
