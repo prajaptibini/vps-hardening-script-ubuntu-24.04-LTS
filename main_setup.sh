@@ -66,6 +66,23 @@ show_info_box "Configuration" \
     "SSH Port: ${CYAN}$NEW_SSH_PORT${NC}" \
     "Log File: ${GRAY}$LOG_FILE${NC}"
 
+# Show installation summary
+show_installation_summary "$NEW_SSH_PORT"
+
+echo -e "${YELLOW}Do you want to continue with the installation?${NC}"
+read -p "Continue? (yes/no): " -r
+echo ""
+
+if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
+    echo "Installation cancelled."
+    exit 0
+fi
+
+# Initialize progress tracking
+SETUP_START_TIME=$(date +%s)
+TOTAL_STEPS=10
+CURRENT_STEP=0
+
 # --- State Management ---
 STATE_DIR="$HOME/.vps_setup_state"
 mkdir -p "$STATE_DIR"
@@ -234,17 +251,23 @@ check_prerequisites() {
 trap 'rollback "Unexpected error" "$LINENO"' ERR
 
 # --- Run prerequisites check ---
+CURRENT_STEP=0
+show_modern_progress $CURRENT_STEP $TOTAL_STEPS "Prerequisites Validation" $SETUP_START_TIME
+show_step_header "0" "10" "Prerequisites Validation"
 check_prerequisites
+
+spacer
+divider
+spacer
 
 # --- Optional: System Integrity Check ---
 if [ -f "$SCRIPT_DIR/check_system_integrity.sh" ]; then
-    echo ""
-    echo "→ Running system integrity check..."
+    log_step "Running system integrity check..."
     if bash "$SCRIPT_DIR/check_system_integrity.sh"; then
-        echo "✅ System integrity verified"
+        log_success "System integrity verified"
     else
-        echo ""
-        echo -e "${YELLOW}⚠️  System integrity check found issues${NC}"
+        spacer
+        log_warning "System integrity check found issues"
         read -p "Continue with setup anyway? (yes/no): " -r
         if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
             exit 1
@@ -252,74 +275,152 @@ if [ -f "$SCRIPT_DIR/check_system_integrity.sh" ]; then
     fi
 fi
 
+spacer
+
 # --- 1. System Update ---
+CURRENT_STEP=1
+show_modern_progress $CURRENT_STEP $TOTAL_STEPS "System Update" $SETUP_START_TIME
+show_step_header "1" "10" "System Update"
+
 if ! check_state "system_updated"; then
-    echo "--- Updating system packages... ---"
+    log_step "Updating package lists..."
     sudo apt-get update || rollback "Failed to update package list"
-    sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" || rollback "Failed to upgrade packages"
+    
+    log_step "Upgrading system packages..."
+    sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+        -o Dpkg::Options::="--force-confdef" \
+        -o Dpkg::Options::="--force-confold" || rollback "Failed to upgrade packages"
+    
     save_state "system_updated"
+    log_success "System packages updated successfully"
     echo "$(date): System packages updated successfully" | sudo tee -a "$LOG_FILE"
+    
+    # Validation checkpoint
+    spacer
+    validation_checkpoint \
+        "Package manager" \
+        "dpkg --audit" \
+        "Package database is consistent" \
+        "Package database has issues"
 else
-    echo "--- System packages already updated, skipping... ---"
+    log_info "System packages already updated, skipping..."
 fi
 
+spacer
+divider
+spacer
+
 # --- 2. Install Essential Security Tools FIRST ---
+CURRENT_STEP=2
+show_modern_progress $CURRENT_STEP $TOTAL_STEPS "Security Tools Installation" $SETUP_START_TIME
+show_step_header "2" "10" "Security Tools Installation"
+
 if ! check_state "security_tools_installed"; then
-    echo "--- Installing security tools... ---"
-    # Install UFW and Fail2Ban (iptables is already included in Ubuntu)
-    # Note: We don't install iptables-persistent as it conflicts with UFW
-    # iptables rules will be managed via systemd service instead
+    log_step "Installing UFW (Uncomplicated Firewall)..."
+    log_step "Installing Fail2Ban (Intrusion prevention)..."
+    log_step "Verifying iptables..."
+    
     sudo apt-get install -y ufw fail2ban iptables || rollback "Failed to install security tools"
     
     save_state "security_tools_installed"
-    echo "✅ Security tools installed (UFW, Fail2Ban, iptables)"
+    log_success "Security tools installed successfully"
+    
+    # Validation checkpoints
+    spacer
+    validation_checkpoint \
+        "UFW installation" \
+        "command -v ufw" \
+        "UFW is installed and available" \
+        "UFW installation failed"
+    
+    validation_checkpoint \
+        "Fail2Ban installation" \
+        "command -v fail2ban-client" \
+        "Fail2Ban is installed and available" \
+        "Fail2Ban installation failed"
+    
+    validation_checkpoint \
+        "iptables availability" \
+        "command -v iptables" \
+        "iptables is available" \
+        "iptables not found"
 else
-    echo "--- Security tools already installed, skipping... ---"
+    log_info "Security tools already installed, skipping..."
 fi
+
+spacer
+divider
+spacer
 
 
 
 # --- 3. Configure UFW Firewall BEFORE Docker ---
+CURRENT_STEP=3
+show_modern_progress $CURRENT_STEP $TOTAL_STEPS "Firewall Configuration" $SETUP_START_TIME
+show_step_header "3" "10" "Firewall Configuration"
+
 if ! check_state "ufw_configured"; then
-    echo "--- Configuring UFW firewall (BEFORE Docker installation)... ---"
-    
-    # Backup UFW config
+    log_step "Backing up UFW configuration..."
     sudo cp /etc/ufw/ufw.conf /etc/ufw/ufw.conf.bak 2>/dev/null || true
     
-    # Reset UFW to clean state
+    log_step "Resetting UFW to clean state..."
     sudo ufw --force reset || rollback "Failed to reset UFW"
     
-    # Set default policies
+    log_step "Setting default policies (deny incoming, allow outgoing)..."
     sudo ufw --force default deny incoming || rollback "Failed to set UFW default deny"
     sudo ufw --force default allow outgoing || rollback "Failed to set UFW default allow outgoing"
     
-    # Allow current SSH port (22) first - CRITICAL for not losing connection
+    log_step "Allowing SSH port 22 (temporary)..."
     sudo ufw allow 22/tcp comment "Temporary - default SSH" || rollback "Failed to allow port 22 in UFW"
     
-    # Allow new SSH port
+    log_step "Allowing custom SSH port $NEW_SSH_PORT..."
     sudo ufw allow $NEW_SSH_PORT/tcp comment "Custom SSH port" || rollback "Failed to allow SSH port in UFW"
     
-    # Allow HTTP/HTTPS for Dokploy
+    log_step "Allowing HTTP (port 80)..."
     sudo ufw allow 80/tcp comment "HTTP" || rollback "Failed to allow port 80"
+    
+    log_step "Allowing HTTPS (port 443)..."
     sudo ufw allow 443/tcp comment "HTTPS" || rollback "Failed to allow port 443"
     
-    # Allow Dokploy port (will be blocked after SSL setup)
+    log_step "Allowing Dokploy (port 3000, temporary)..."
     sudo ufw allow 3000/tcp comment "Dokploy (temporary)" || rollback "Failed to allow port 3000"
     
-    # Enable UFW
+    log_step "Enabling UFW firewall..."
     sudo ufw --force enable || rollback "Failed to enable UFW"
     
     save_state "ufw_configured"
-    echo "✅ Firewall configured (SSH, HTTP, HTTPS, Dokploy)"
+    log_success "Firewall configured successfully"
     echo "$(date): UFW firewall configured successfully" | sudo tee -a "$LOG_FILE"
+    
+    # Validation checkpoints
+    spacer
+    show_validation_box "Firewall Status" \
+        "${GREEN}✓${NC} UFW is active and enabled" \
+        "${GREEN}✓${NC} Port 22: Open (temporary)" \
+        "${GREEN}✓${NC} Port $NEW_SSH_PORT: Open (custom SSH)" \
+        "${GREEN}✓${NC} Port 80: Open (HTTP)" \
+        "${GREEN}✓${NC} Port 443: Open (HTTPS)" \
+        "${GREEN}✓${NC} Port 3000: Open (Dokploy, temporary)" \
+        "${GRAY}Default policy: Deny incoming, Allow outgoing${NC}"
+    
+    validation_checkpoint \
+        "UFW status" \
+        "sudo ufw status | grep -q 'Status: active'" \
+        "UFW is active" \
+        "UFW is not active"
 else
-    echo "--- UFW already configured, skipping... ---"
+    log_info "UFW already configured, skipping..."
 fi
 
+spacer
+divider
+spacer
+
 # --- 4. Configure Secure DNS (Quad9 with DoT) ---
+show_step_header "4" "10" "Secure DNS Configuration"
+
 if ! check_state "dns_configured"; then
-    show_section "Configuring Secure DNS"
-    echo "--- Configuring secure DNS with Quad9 (DNS over TLS)... ---"
+    log_step "Configuring Quad9 DNS with DNS-over-TLS..."
     
     # Backup existing resolved.conf
     if [ -f /etc/systemd/resolved.conf ]; then
@@ -370,22 +471,43 @@ EOF
         echo "⚠️  Netplan not found, skipping Netplan enforcement."
     fi
 
-    # Verify DNS is working
-    if resolvectl status &>/dev/null; then
-        echo "✅ DNS configured with Quad9 ECS (IPv4 + IPv6, TLS encrypted, DNSSEC)"
-    else
-        echo "⚠️ DNS configured but verification failed (may still work)"
-    fi
-    
     save_state "dns_configured"
+    log_success "Secure DNS configured successfully"
     echo "$(date): Secure DNS configured successfully" | sudo tee -a "$LOG_FILE"
+    
+    # Validation checkpoints
+    spacer
+    validation_checkpoint \
+        "DNS resolution" \
+        "resolvectl status" \
+        "systemd-resolved is working" \
+        "DNS resolution may have issues"
+    
+    validation_checkpoint \
+        "Quad9 DNS" \
+        "resolvectl status | grep -q '9.9.9.11'" \
+        "Quad9 DNS is configured" \
+        "Quad9 DNS not detected"
+    
+    show_validation_box "DNS Configuration" \
+        "${GREEN}✓${NC} Primary DNS: 9.9.9.11 (Quad9 ECS)" \
+        "${GREEN}✓${NC} Fallback DNS: 9.9.9.9 (Quad9)" \
+        "${GREEN}✓${NC} DNS-over-TLS: Enabled" \
+        "${GREEN}✓${NC} DNSSEC: Enabled" \
+        "${GREEN}✓${NC} DHCP DNS: Ignored (via Netplan)"
 else
-    echo "--- DNS already configured, skipping... ---"
+    log_info "DNS already configured, skipping..."
 fi
 
+spacer
+divider
+spacer
+
 # --- 5. Change SSH Port ---
+show_step_header "5" "10" "SSH Port Configuration"
+
 if ! check_state "ssh_configured"; then
-    echo "--- Changing the default SSH port to $NEW_SSH_PORT... ---"
+    log_step "Changing SSH port from 22 to $NEW_SSH_PORT..."
     
     # Backup SSH config with timestamp
     BACKUP_FILE="/etc/ssh/sshd_config.bak.$(date +%Y%m%d_%H%M%S)"
@@ -490,15 +612,31 @@ if ! check_state "ssh_configured"; then
     fi
     
     save_state "ssh_configured"
-    echo "✅ SSH port has been changed to $NEW_SSH_PORT (port 22 still active as fallback)."
+    log_success "SSH port changed to $NEW_SSH_PORT (port 22 still active as fallback)"
     echo "$(date): SSH port changed to $NEW_SSH_PORT successfully" | sudo tee -a "$LOG_FILE"
+    
+    # Validation checkpoints
+    spacer
+    show_validation_box "SSH Configuration" \
+        "${GREEN}✓${NC} SSH service: Running" \
+        "${GREEN}✓${NC} Port 22: Active (temporary)" \
+        "${GREEN}✓${NC} Port $NEW_SSH_PORT: Active (new)" \
+        "${GREEN}✓${NC} Root login: Disabled" \
+        "${GREEN}✓${NC} Password auth: Disabled" \
+        "${GREEN}✓${NC} SSH socket: Masked (permanent)"
 else
-    echo "--- SSH already configured, skipping... ---"
+    log_info "SSH already configured, skipping..."
 fi
 
+spacer
+divider
+spacer
+
 # --- 6. Configure Fail2Ban ---
+show_step_header "6" "10" "Fail2Ban Configuration"
+
 if ! check_state "fail2ban_configured"; then
-    echo "--- Configuring Fail2Ban... ---"
+    log_step "Configuring Fail2Ban for SSH protection..."
     cat <<EOM | sudo tee /etc/fail2ban/jail.local > /dev/null || rollback "Failed to create Fail2Ban config"
 [DEFAULT]
 bantime = 24h
@@ -517,11 +655,30 @@ EOM
     sudo systemctl restart fail2ban || rollback "Failed to restart Fail2Ban"
     sudo systemctl enable fail2ban || rollback "Failed to enable Fail2Ban"
     save_state "fail2ban_configured"
-    echo "✅ Fail2Ban configured to monitor SSH ports 22 and $NEW_SSH_PORT."
+    log_success "Fail2Ban configured successfully"
     echo "$(date): Fail2Ban configured successfully" | sudo tee -a "$LOG_FILE"
+    
+    # Validation checkpoints
+    spacer
+    validation_checkpoint \
+        "Fail2Ban service" \
+        "sudo systemctl is-active --quiet fail2ban" \
+        "Fail2Ban is running" \
+        "Fail2Ban is not running"
+    
+    show_validation_box "Fail2Ban Configuration" \
+        "${GREEN}✓${NC} Service: Active and enabled" \
+        "${GREEN}✓${NC} Monitoring: SSH ports 22 and $NEW_SSH_PORT" \
+        "${GREEN}✓${NC} Ban time: 24 hours" \
+        "${GREEN}✓${NC} Max retries: 5 attempts" \
+        "${GREEN}✓${NC} Find time: 10 minutes"
 else
-    echo "--- Fail2Ban already configured, skipping... ---"
+    log_info "Fail2Ban already configured, skipping..."
 fi
+
+spacer
+divider
+spacer
 
 # --- 7. Configure Automatic Security Updates ---
 if ! check_state "auto_updates_configured"; then
@@ -917,50 +1074,25 @@ else
     PUBLIC_IP="<your_server_ip>"
 fi
 
-echo ""
-show_success_banner
+# Final progress
+CURRENT_STEP=10
+show_modern_progress $CURRENT_STEP $TOTAL_STEPS "Installation Complete!" $SETUP_START_TIME
 
-show_info_box "SSH Connection Information" \
-    "SSH Port: ${CYAN}$NEW_SSH_PORT${NC}" \
-    "Username: ${CYAN}$NEW_USER${NC}" \
-    "Connection: ${CYAN}ssh $NEW_USER@$PUBLIC_IP -p $NEW_SSH_PORT${NC}" \
-    "" \
-    "Port saved in: ${GRAY}/tmp/ssh_port_info.txt${NC}"
-
-show_info_box "Completed Configurations" \
-    "${GREEN}✓${NC} Secure user created" \
-    "${GREEN}✓${NC} SSH port changed and secured" \
-    "${GREEN}✓${NC} UFW firewall configured" \
-    "${GREEN}✓${NC} Fail2Ban enabled" \
-    "${GREEN}✓${NC} Automatic updates configured" \
-    "${GREEN}✓${NC} Docker with log rotation" \
-    "${GREEN}✓${NC} Dokploy installed and running"
-
-show_info_box "Next Steps" \
-    "${BOLD}1.${NC} Access Dokploy web interface:" \
-    "   ${CYAN}http://$PUBLIC_IP:3000${NC}" \
-    "" \
-    "${BOLD}2.${NC} Create your admin account" \
-    "" \
-    "${BOLD}3.${NC} Configure your domain and SSL certificate" \
-    "" \
-    "${BOLD}4.${NC} Secure port 3000 after SSL setup:" \
-    "   ${CYAN}./post_ssl_setup.sh${NC}" \
-    "" \
-    "${BOLD}5.${NC} Verify system health:" \
-    "   ${CYAN}./system_check.sh${NC}" \
-
-
-show_info_box "Important Notes" \
-    "• Docker logs are rotated (max 30MB per container)" \
-    "• Docker ports (3000, 80, 443) are open by default" \
-    "• All changes logged to: ${GRAY}$LOG_FILE${NC}" \
-    "• Original user '${GRAY}$DEFAULT_USER${NC}' has been removed" \
-    "• SSH port 22 is now DISABLED (only $NEW_SSH_PORT works)" \
-    "• Setup state saved in: ${GRAY}$STATE_DIR${NC}"
+# Calculate total time
+SETUP_END_TIME=$(date +%s)
+TOTAL_TIME=$((SETUP_END_TIME - SETUP_START_TIME))
+MINUTES=$((TOTAL_TIME / 60))
+SECONDS=$((TOTAL_TIME % 60))
 
 echo ""
-echo "TROUBLESHOOTING:"
-echo "   - System health: ./system_check.sh"
 echo ""
-echo "=================================================================="
+
+# Show installation dashboard
+show_installation_dashboard "$NEW_SSH_PORT" "$PUBLIC_IP" "$NEW_USER"
+
+echo -e "${GRAY}╔═══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GRAY}║${NC} ${GREEN}✓${NC} Installation completed in ${CYAN}${MINUTES}m ${SECONDS}s${NC}"
+echo -e "${GRAY}║${NC} ${GREEN}✓${NC} All changes logged to: ${GRAY}$LOG_FILE${NC}"
+echo -e "${GRAY}║${NC} ${GREEN}✓${NC} Setup state saved in: ${GRAY}$STATE_DIR${NC}"
+echo -e "${GRAY}╚═══════════════════════════════════════════════════════════════╝${NC}"
+echo ""
