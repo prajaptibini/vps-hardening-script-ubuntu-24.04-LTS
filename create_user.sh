@@ -40,7 +40,11 @@ echo ""
 # Loop until a valid username is provided
 while true; do
     echo -n "Username: "
-    read NEW_USER
+    if [ -c /dev/tty ]; then
+        read NEW_USER < /dev/tty
+    else
+        read NEW_USER
+    fi
     
     # Check if username is empty
     if [ -z "$NEW_USER" ]; then
@@ -67,7 +71,11 @@ while true; do
     # Check if username is a system user (UID < 1000)
     if [ "$NEW_USER" = "root" ] || [ "$NEW_USER" = "ubuntu" ] || [ "$NEW_USER" = "admin" ]; then
         echo -e "${YELLOW}⚠️  '$NEW_USER' is a common system username. Choose something more unique for security.${NC}"
-        read -p "Are you sure you want to use '$NEW_USER'? (yes/no): " -r
+        if [ -c /dev/tty ]; then
+            read -p "Are you sure you want to use '$NEW_USER'? (yes/no): " -r < /dev/tty
+        else
+            read -p "Are you sure you want to use '$NEW_USER'? (yes/no): " -r
+        fi
         if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
             echo ""
             continue
