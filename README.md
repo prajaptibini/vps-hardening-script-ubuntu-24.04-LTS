@@ -49,6 +49,89 @@ After testing your SSH connection with the new user:
 # Reconnect with your new user
 ssh your-new-user@your-server-ip
 
+# Check which directory was created
+ls -la ~
+
+# Navigate to the scripts directory (use the actual name from ls output)
+cd ~/vps-hardening-script-ubuntu-24.04-LTS
+# OR
+cd ~/vps-hardening
+
+# Run the main setup
+./main_setup.sh
+
+# OR use the interactive menu
+./menu.sh
+```
+
+**This will show:**
+- 📋 Installation plan with all 10 steps and time estimates
+- [████████████░░░░] Modern progress bar with ETA
+- ✅ Validation checkpoints after each step
+- 🎯 Complete dashboard at the end
+
+**Installation includes:**
+- Change SSH port to random high port (50000-59999)
+- Configure UFW firewall with validation
+- Install and configure Docker + Dokploy
+- Enable Fail2Ban and automatic security updates
+- Remove the default ubuntu user
+- ~15 minutes total time
+
+### 3. Post-Installation Dashboard
+
+After installation completes, you'll see:
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║                  🎉  INSTALLATION COMPLETE!  🎉              ║
+╚═══════════════════════════════════════════════════════════════╝
+
+━━━ Services Status ━━━
+  ✓ SSH:      Running on port 53847
+  ✓ UFW:      Active (6 rules)
+  ✓ Docker:   Running (1 container)
+  ✓ Dokploy:  Ready at http://your-ip:3000
+  ✓ Fail2Ban: Monitoring SSH
+
+━━━ Quick Start ━━━
+  1. Access Dokploy: http://your-ip:3000
+  2. Create your admin account
+  3. Configure your first domain
+  4. After SSL setup: ./post_ssl_setup.sh
+
+━━━ Documentation ━━━
+  • Full docs:      cat README.md
+  • Security guide: cat SECURITY.md
+  • Health check:   ./system_check.sh
+
+✓ Installation completed in 12m 34s
+```
+
+### 4. Troubleshooting
+
+**If scripts directory not found:**
+```bash
+# List your home directory
+ls -la ~
+
+# If scripts are missing, re-clone manually
+git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
+cd vps-hardening-script-ubuntu-24.04-LTS
+chmod +x *.sh
+./main_setup.sh
+```
+
+**If you get permission errors:**
+```bash
+# Make scripts executable
+chmod +x ~/vps-hardening*/*.sh
+
+# Or re-run make_executable.sh
+cd ~/vps-hardening*
+./make_executable.sh
+```
+
 # Navigate to the scripts directory
 cd ~/vps-hardening-script-ubuntu-24.04-LTS
 
