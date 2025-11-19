@@ -130,11 +130,20 @@ echo ""
 echo -e "${YELLOW}⚠️  You will need to reconnect with the new user after step 1${NC}"
 echo ""
 
-read -p "Do you want to continue? (yes/no): " -r < /dev/tty
-echo ""
+# Try to read from TTY
+if [ -c /dev/tty ]; then
+    read -p "Do you want to continue? (yes/no): " -r CONFIRM < /dev/tty
+else
+    CONFIRM=""
+fi
 
-if [[ ! $REPLY =~ ^[Yy](es)?$ ]]; then
+echo "DEBUG: Received input: '$CONFIRM'"
+
+if [[ ! "$CONFIRM" =~ ^[Yy] ]]; then
     echo "Installation cancelled."
+    echo "If you are having trouble, try downloading the script first:"
+    echo "  git clone $REPO_URL vps-hardening"
+    echo "  cd vps-hardening && sudo ./install.sh"
     exit 0
 fi
 
