@@ -130,20 +130,27 @@ echo ""
 echo -e "${YELLOW}⚠️  You will need to reconnect with the new user after step 1${NC}"
 echo ""
 
-# Try to read from TTY
-if [ -c /dev/tty ]; then
-    read -p "Do you want to continue? (yes/no): " -r CONFIRM < /dev/tty
-else
-    CONFIRM=""
-fi
+# Robust input reading
+CONFIRM=""
 
-echo "DEBUG: Received input: '$CONFIRM'"
+if [ -t 0 ]; then
+    # Standard interactive shell
+    read -p "Do you want to continue? (yes/no): " -r CONFIRM
+elif [ -c /dev/tty ]; then
+    # Piped input (curl | bash), try explicit TTY
+    # Disable set -e temporarily as read might return non-zero on some systems
+    set +e
+    read -p "Do you want to continue? (yes/no): " -r CONFIRM < /dev/tty
+    set -e
+else
+    # No TTY available (headless/CI)
+    echo "⚠️  No interactive terminal detected."
+    echo "Assuming 'yes' to proceed..."
+    CONFIRM="yes"
+fi
 
 if [[ ! "$CONFIRM" =~ ^[Yy] ]]; then
     echo "Installation cancelled."
-    echo "If you are having trouble, try downloading the script first:"
-    echo "  git clone $REPO_URL vps-hardening"
-    echo "  cd vps-hardening && sudo ./install.sh"
     exit 0
 fi
 
