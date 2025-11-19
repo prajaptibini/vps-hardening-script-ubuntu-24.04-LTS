@@ -130,7 +130,7 @@ echo ""
 echo -e "${YELLOW}⚠️  You will need to reconnect with the new user after step 1${NC}"
 echo ""
 
-read -p "Do you want to continue? (yes/no): " -r
+read -p "Do you want to continue? (yes/no): " -r < /dev/tty
 echo ""
 
 if [[ ! $REPLY =~ ^[Yy](es)?$ ]]; then
