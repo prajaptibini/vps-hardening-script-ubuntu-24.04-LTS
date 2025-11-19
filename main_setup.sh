@@ -323,9 +323,39 @@ EOF
     # Restart systemd-resolved
     sudo systemctl restart systemd-resolved || rollback "Failed to restart systemd-resolved"
     
+    # --- NEW: Enforce via Netplan (Ignore DHCP DNS) ---
+    echo "→ Enforcing DNS settings via Netplan (Ignoring DHCP DNS)..."
+    cat <<EOF | sudo tee /etc/netplan/99-vps-hardening-dns.yaml > /dev/null
+network:
+  version: 2
+  ethernets:
+    # Match common interface names
+    id0:
+      match:
+        name: "en*"
+      dhcp4-overrides:
+        use-dns: false
+      dhcp6-overrides:
+        use-dns: false
+    id1:
+      match:
+        name: "eth*"
+      dhcp4-overrides:
+        use-dns: false
+      dhcp6-overrides:
+        use-dns: false
+EOF
+    
+    # Apply Netplan changes safely
+    if command -v netplan &> /dev/null; then
+        sudo netplan apply || echo "⚠️  Warning: Failed to apply netplan changes (check config)"
+    else
+        echo "⚠️  Netplan not found, skipping Netplan enforcement."
+    fi
+
     # Verify DNS is working
     if resolvectl status &>/dev/null; then
-        echo "✅ DNS configured with Quad9 ECS (IPv4 + IPv6, TLS encrypted, DNSSEC, CDN optimized)"
+        echo "✅ DNS configured with Quad9 ECS (IPv4 + IPv6, TLS encrypted, DNSSEC)"
     else
         echo "⚠️ DNS configured but verification failed (may still work)"
     fi
@@ -787,16 +817,35 @@ if getent passwd $DEFAULT_USER > /dev/null; then
     # Create backup of user info before deletion
     getent passwd $DEFAULT_USER > /tmp/backup_user_info.txt
     
-    # Kill any processes owned by the user
+    # Aggressively kill processes
+    echo "→ Killing processes for $DEFAULT_USER..."
     sudo pkill -u $DEFAULT_USER 2>/dev/null || true
     sleep 2
     
+    # Check if processes still exist and force kill
+    if pgrep -u $DEFAULT_USER > /dev/null; then
+        echo "  ⚠️  Some processes refused to die, using SIGKILL..."
+        sudo pkill -9 -u $DEFAULT_USER 2>/dev/null || true
+        sleep 2
+    fi
+    
+    # Double check
+    if pgrep -u $DEFAULT_USER > /dev/null; then
+        echo "  ❌ CRITICAL: Could not kill all processes for $DEFAULT_USER"
+        ps -u $DEFAULT_USER
+        echo "  Attempting removal anyway..."
+    fi
+    
     # Remove user and home directory
-    sudo deluser --remove-home $DEFAULT_USER 2>/dev/null || {
-        echo "⚠️  Warning: Could not remove default user completely"
-        echo "Attempting force removal..."
-        sudo userdel -r $DEFAULT_USER 2>/dev/null || true
-    }
+    echo "→ Deleting user and home directory..."
+    # Try standard deluser first
+    if ! sudo deluser --remove-home $DEFAULT_USER 2>/dev/null; then
+        echo "  ⚠️  'deluser' failed, trying 'userdel -f -r'..."
+        # Force remove (files in home, mail spool, etc.)
+        if ! sudo userdel -f -r $DEFAULT_USER 2>/dev/null; then
+             echo "  ❌ Failed to remove user '$DEFAULT_USER'"
+        fi
+    fi
     
     if ! getent passwd $DEFAULT_USER > /dev/null; then
         echo "✅ Default user '$DEFAULT_USER' has been removed."

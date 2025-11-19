@@ -1,255 +1,204 @@
 #!/bin/bash
-# SCRIPT 4: System Health Check (Enhanced)
+# SCRIPT: System Health Check - Operational Status
+# Verifies: Load, RAM, Disk, Time, DNS, Services, Docker
 
 set -e
 
 # Load banner functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/banner.sh"
-
-# Show check banner
-show_check_banner
-
-# Read the username from the file created by create_user.sh
-if [ -f /tmp/new_user_name.txt ]; then
-    NEW_USER=$(cat /tmp/new_user_name.txt)
+if [ -f "$SCRIPT_DIR/banner.sh" ]; then
+    source "$SCRIPT_DIR/banner.sh"
 else
-    NEW_USER="prod-dokploy"  # Fallback to default
+    # Fallback
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    CYAN='\033[0;36m'
+    NC='\033[0m'
+    
+    show_section() { echo -e "${BLUE}--- $1 ---${NC}"; }
+    report_finding() { echo "$1: $2"; }
 fi
-LOG_FILE="/var/log/vps_setup.log"
 
-# Counters
+# Initialize counters
 ISSUES=0
 WARNINGS=0
+OK=0
 
-echo "$(date): Running system health check" | sudo tee -a "$LOG_FILE"
-
-# Get public IPs
-IPV4=$(curl -4 -s ifconfig.me 2>/dev/null || echo "")
-IPV6=$(curl -6 -s ifconfig.me 2>/dev/null || echo "")
-
-echo -e "${BLUE}🌍 Public IP:${NC}"
-if [ -n "$IPV4" ]; then
-    echo -e "   IPv4: ${CYAN}$IPV4${NC}"
-fi
-if [ -n "$IPV6" ]; then
-    echo -e "   IPv6: ${CYAN}$IPV6${NC}"
-fi
-if [ -z "$IPV4" ] && [ -z "$IPV6" ]; then
-    echo -e "   ${YELLOW}Unable to detect${NC}"
-fi
-echo ""
-
-# --- User Check ---
-echo "👤 Current user: $(whoami)"
-if [ "$(whoami)" = "$NEW_USER" ]; then
-    echo -e "   ${GREEN}✅ Running as correct user${NC}"
-else
-    echo -e "   ${YELLOW}⚠️  Should be running as $NEW_USER${NC}"
-    WARNINGS=$((WARNINGS + 1))
-fi
-
-# --- SSH Configuration ---
-echo ""
-echo "🔐 SSH Configuration:"
-SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')
-echo "   Current SSH Port: $SSH_PORT"
-
-# Check SSH socket status
-if systemctl is-enabled ssh.socket 2>/dev/null | grep -q "masked"; then
-    echo -e "   ${GREEN}✅ SSH socket: Properly masked${NC}"
-elif systemctl is-enabled ssh.socket 2>/dev/null | grep -q "disabled"; then
-    echo -e "   ${YELLOW}⚠️  SSH socket: Disabled (should be masked)${NC}"
-    WARNINGS=$((WARNINGS + 1))
-else
-    echo -e "   ${RED}❌ SSH socket: ACTIVE (will override port on reboot!)${NC}"
-    ISSUES=$((ISSUES + 1))
-fi
-
-# Check SSH service status
-if systemctl is-enabled ssh.service 2>/dev/null | grep -q "enabled"; then
-    echo -e "   ${GREEN}✅ SSH service: Enabled for boot${NC}"
-else
-    echo -e "   ${RED}❌ SSH service: Not enabled for boot${NC}"
-    ISSUES=$((ISSUES + 1))
-fi
-
-# Test SSH connectivity
-echo "   Testing SSH connectivity on port $SSH_PORT..."
-if timeout 2 bash -c "echo > /dev/tcp/localhost/$SSH_PORT" 2>/dev/null; then
-    echo -e "   ${GREEN}✅ SSH is responding on port $SSH_PORT${NC}"
-else
-    echo -e "   ${RED}❌ SSH not responding on port $SSH_PORT${NC}"
-    ISSUES=$((ISSUES + 1))
-fi
-
-if [ -f /tmp/ssh_port_info.txt ]; then
-    SAVED_PORT=$(cat /tmp/ssh_port_info.txt)
-    echo "   Saved Port: $SAVED_PORT"
-    if [ -f /tmp/ssh_connection_command.txt ]; then
-        echo "   Connection Command: $(cat /tmp/ssh_connection_command.txt)"
-    fi
-else
-    echo "   Warning: Port backup file not found"
-fi
-
-# --- Firewall Status ---
-echo ""
-echo "🛡️  Firewall Status:"
-if command -v ufw &> /dev/null; then
-    sudo ufw status numbered
-else
-    echo -e "   ${RED}❌ UFW not installed${NC}"
-    ISSUES=$((ISSUES + 1))
-fi
-
-# --- Services Status ---
-echo ""
-echo "🔧 Critical Services:"
-services=("ssh" "fail2ban" "docker")
-for service in "${services[@]}"; do
-    if systemctl is-active --quiet "$service"; then
-        echo -e "   ${GREEN}✅ $service: Active${NC}"
-    else
-        echo -e "   ${RED}❌ $service: Inactive${NC}"
-        ISSUES=$((ISSUES + 1))
-    fi
-done
-
-# UFW is not a systemd service, check differently
-if command -v ufw &> /dev/null; then
-    if sudo ufw status | grep -q "Status: active"; then
-        echo -e "   ${GREEN}✅ ufw: Active${NC}"
-    else
-        echo -e "   ${YELLOW}⚠️  ufw: Installed but inactive${NC}"
-        WARNINGS=$((WARNINGS + 1))
-    fi
-else
-    echo -e "   ${RED}❌ ufw: Not installed${NC}"
-    ISSUES=$((ISSUES + 1))
-fi
-
-# --- Docker Containers ---
-echo ""
-echo "🐳 Docker Status:"
-if command -v docker &> /dev/null; then
-    echo "   Docker version: $(docker --version)"
-    echo "   Running containers:"
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+# Function to report findings
+report_status() {
+    local status=$1
+    local message=$2
+    local detail=$3
     
-    # Check Dokploy specifically
-    echo ""
-    echo "   Dokploy Status:"
+    case $status in
+        OK)
+            echo -e "${GREEN}[OK]${NC} $message"
+            OK=$((OK + 1))
+            ;;
+        WARN)
+            echo -e "${YELLOW}[WARN]${NC} $message"
+            WARNINGS=$((WARNINGS + 1))
+            ;;
+        FAIL)
+            echo -e "${RED}[FAIL]${NC} $message"
+            ISSUES=$((ISSUES + 1))
+            ;;
+        INFO)
+            echo -e "${CYAN}[INFO]${NC} $message"
+            ;;
+    esac
+    
+    if [ -n "$detail" ]; then
+        echo "  → $detail"
+    fi
+}
+
+clear
+echo -e "${CYAN}"
+cat << "EOF"
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║                 📊  SYSTEM HEALTH REPORT  📊                     ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+EOF
+echo -e "${NC}"
+echo "Date: $(date)"
+echo "Hostname: $(hostname)"
+echo "Uptime: $(uptime -p)"
+echo ""
+
+# 1. System Resources
+show_section "System Resources"
+
+# Load Average
+LOAD=$(cat /proc/loadavg | awk '{print $1}')
+CORES=$(nproc)
+echo "  Load Average (1m): $LOAD (Cores: $CORES)"
+if (( $(echo "$LOAD < $CORES" | bc -l) )); then
+    report_status "OK" "System load is normal"
+else
+    report_status "WARN" "System load is high" "Load $LOAD > Cores $CORES"
+fi
+
+# Memory
+MEM_USED=$(free -m | awk 'NR==2{print $3}')
+MEM_TOTAL=$(free -m | awk 'NR==2{print $2}')
+MEM_PERCENT=$((MEM_USED * 100 / MEM_TOTAL))
+echo "  Memory: ${MEM_USED}MB / ${MEM_TOTAL}MB (${MEM_PERCENT}%)"
+
+if [ "$MEM_PERCENT" -lt 80 ]; then
+    report_status "OK" "Memory usage is healthy"
+elif [ "$MEM_PERCENT" -lt 90 ]; then
+    report_status "WARN" "Memory usage is high"
+else
+    report_status "FAIL" "Memory usage is critical"
+fi
+
+# Disk
+DISK_USAGE=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
+echo "  Disk (/): ${DISK_USAGE}% used"
+
+if [ "$DISK_USAGE" -lt 70 ]; then
+    report_status "OK" "Disk space is healthy"
+elif [ "$DISK_USAGE" -lt 90 ]; then
+    report_status "WARN" "Disk space is getting low"
+else
+    report_status "FAIL" "Disk space is critical"
+fi
+
+# 2. Time Synchronization
+show_section "Time Synchronization"
+
+if command -v timedatectl &> /dev/null; then
+    if timedatectl status | grep -q "System clock synchronized: yes"; then
+        report_status "OK" "System clock is synchronized"
+    else
+        report_status "FAIL" "System clock is NOT synchronized" "Check NTP service"
+    fi
+else
+    report_status "WARN" "timedatectl not found"
+fi
+
+# 3. Network & DNS
+show_section "Network & DNS"
+
+# Public IP
+IPV4=$(curl -4 -s --max-time 2 ifconfig.me 2>/dev/null || echo "Unknown")
+echo "  Public IPv4: $IPV4"
+
+# DNS Check (Quad9)
+if resolvectl status | grep -q "9.9.9.11"; then
+    report_status "OK" "Using Quad9 DNS"
+else
+    report_status "WARN" "Not using Quad9 DNS" "Check 'resolvectl status'"
+fi
+
+# Connectivity
+if ping -c 1 -W 2 9.9.9.9 &> /dev/null; then
+    report_status "OK" "Internet connectivity confirmed"
+else
+    report_status "FAIL" "No internet connectivity"
+fi
+
+# 4. Services
+show_section "Critical Services"
+
+check_service() {
+    if systemctl is-active --quiet "$1"; then
+        report_status "OK" "Service '$1' is running"
+    else
+        report_status "FAIL" "Service '$1' is NOT running"
+    fi
+}
+
+check_service "ssh"
+check_service "fail2ban"
+check_service "docker"
+
+# 5. Docker Health
+show_section "Docker Health"
+
+if command -v docker &> /dev/null; then
+    CONTAINER_COUNT=$(docker ps -q | wc -l)
+    echo "  Running Containers: $CONTAINER_COUNT"
+    
     if docker ps | grep -q dokploy; then
-        echo -e "   ${GREEN}✅ Dokploy container is running${NC}"
+        report_status "OK" "Dokploy container is running"
         
-        # Test HTTP response
+        # Check Port 3000 response
         HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "000")
         if [[ "$HTTP_CODE" =~ ^(200|301|302)$ ]]; then
-            echo -e "   ${GREEN}✅ Dokploy is responding (HTTP $HTTP_CODE)${NC}"
-            if [ -n "$IPV4" ]; then
-                echo -e "   ${BLUE}🌐 Access: http://$IPV4:3000${NC}"
-            elif [ -n "$IPV6" ]; then
-                echo -e "   ${BLUE}🌐 Access: http://[$IPV6]:3000${NC}"
-            fi
+            report_status "OK" "Dokploy is responding (HTTP $HTTP_CODE)"
         else
-            echo -e "   ${YELLOW}⚠️  Dokploy not responding on port 3000 (HTTP $HTTP_CODE)${NC}"
-            WARNINGS=$((WARNINGS + 1))
+            report_status "WARN" "Dokploy not responding (HTTP $HTTP_CODE)"
         fi
     else
-        echo -e "   ${RED}❌ Dokploy container not found${NC}"
-        ISSUES=$((ISSUES + 1))
+        report_status "FAIL" "Dokploy container not found"
     fi
 else
-    echo -e "   ${RED}❌ Docker not installed${NC}"
-    ISSUES=$((ISSUES + 1))
+    report_status "FAIL" "Docker not installed"
 fi
 
-# --- Disk Usage ---
+# Summary
 echo ""
-echo "💾 Disk Usage:"
-DISK_USAGE=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
-df -h / | awk 'NR==2 {printf "   Root: %s used, %s available (%s)\n", $3, $4, $5}'
-if [ "$DISK_USAGE" -gt 80 ]; then
-    echo -e "   ${RED}❌ Disk usage above 80%!${NC}"
-    ISSUES=$((ISSUES + 1))
-elif [ "$DISK_USAGE" -gt 70 ]; then
-    echo -e "   ${YELLOW}⚠️  Disk usage above 70%${NC}"
-    WARNINGS=$((WARNINGS + 1))
-fi
-
-# --- Memory Usage ---
-echo ""
-echo "🧠 Memory Usage:"
-MEM_USAGE=$(free | awk 'NR==2 {printf "%.0f", $3/$2 * 100}')
-free -h | awk 'NR==2 {printf "   RAM: %s used, %s available\n", $3, $7}'
-if [ "$MEM_USAGE" -gt 90 ]; then
-    echo -e "   ${RED}❌ Memory usage above 90%!${NC}"
-    ISSUES=$((ISSUES + 1))
-elif [ "$MEM_USAGE" -gt 80 ]; then
-    echo -e "   ${YELLOW}⚠️  Memory usage above 80%${NC}"
-    WARNINGS=$((WARNINGS + 1))
-fi
-
-# --- Network Ports ---
-echo ""
-echo "🌐 Open Ports:"
-ss -tuln | grep LISTEN | awk '{print "   " $1 " " $5}' | sort
-
-# --- Recent Log Entries ---
-echo ""
-echo "📋 Recent Setup Log (last 5 entries):"
-if [ -f "$LOG_FILE" ]; then
-    tail -5 "$LOG_FILE" | sed 's/^/   /'
-else
-    echo "   No setup log found"
-fi
-
-# --- iptables Rules (after SSL) ---
-echo ""
-echo "🔒 iptables Rules:"
-if sudo iptables -L DOCKER-USER -n 2>/dev/null | grep -q "tcp dpt:3000"; then
-    echo -e "   ${GREEN}✅ Port 3000 rules configured${NC}"
-    sudo iptables -L DOCKER-USER -n | grep "3000" | sed 's/^/   /'
-else
-    if ss -tuln | grep -q ":3000 "; then
-        echo -e "   ${YELLOW}⚠️  Port 3000 is open - run post_ssl_setup.sh after SSL configuration${NC}"
-        WARNINGS=$((WARNINGS + 1))
-    fi
-fi
-
-# --- Security Recommendations ---
-echo ""
-echo "🔍 Security Status:"
-if ! sudo ufw status | grep -q "Status: active"; then
-    echo -e "   ${RED}❌ UFW firewall is not active${NC}"
-    ISSUES=$((ISSUES + 1))
-fi
-
-# Check if default SSH port is blocked
-if sudo ufw status | grep -q "22.*DENY"; then
-    echo -e "   ${GREEN}✅ Default SSH port (22) is blocked${NC}"
-else
-    echo -e "   ${YELLOW}⚠️  Default SSH port (22) not explicitly blocked${NC}"
-    WARNINGS=$((WARNINGS + 1))
-fi
-
-# --- Summary ---
-echo ""
-echo "==================================================================="
-if [ $ISSUES -eq 0 ] && [ $WARNINGS -eq 0 ]; then
-    echo -e "${GREEN}✅ HEALTH CHECK PASSED - No issues found!${NC}"
-elif [ $ISSUES -eq 0 ]; then
-    echo -e "${YELLOW}⚠️  HEALTH CHECK COMPLETED - $WARNINGS warning(s) found${NC}"
-else
-    echo -e "${RED}❌ HEALTH CHECK FAILED - $ISSUES issue(s) and $WARNINGS warning(s) found${NC}"
-fi
-echo "==================================================================="
+echo "=================================================================="
+echo "  📊 HEALTH SUMMARY"
+echo "=================================================================="
+echo -e "${GREEN}OK:       $OK${NC}"
+echo -e "${YELLOW}Warnings: $WARNINGS${NC}"
+echo -e "${RED}Issues:   $ISSUES${NC}"
 echo ""
 
-# Exit with appropriate code
 if [ $ISSUES -gt 0 ]; then
+    echo -e "${RED}❌ System has critical issues.${NC}"
     exit 1
+elif [ $WARNINGS -gt 0 ]; then
+    echo -e "${YELLOW}⚠️  System has warnings.${NC}"
+    exit 0
 else
+    echo -e "${GREEN}✅ System is healthy!${NC}"
     exit 0
 fi

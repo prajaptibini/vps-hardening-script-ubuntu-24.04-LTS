@@ -1,311 +1,71 @@
-# 🔒 VPS Security Hardening + Dokploy
+# 🚀 VPS Hardening Script (Ubuntu 24.04 LTS)
 
-> **Production-ready automated security setup for Ubuntu 24.04 LTS VPS with Dokploy deployment platform**
+> **Production-Ready Security Suite for Ubuntu 24.04 LTS**
+> Secure your VPS in minutes with best practices, automated hardening, and Dokploy deployment.
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue)](https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS/releases)
-[![Ubuntu](https://img.shields.io/badge/ubuntu-24.04%20LTS-orange)](https://ubuntu.com)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Status](https://img.shields.io/badge/status-production--ready-brightgreen)](https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange.svg)
+![Security](https://img.shields.io/badge/Security-Hardened-green.svg)
 
----
+## ✨ Features
 
-## 🎯 What This Does
+- **🖥️ Interactive Menu**: Manage everything from a single dashboard.
+- **🔐 Secure User**: Creates a sudo user with SSH keys and removes the default `ubuntu` user.
+- **🛡️ Network Hardening**:
+    - **Static IP**: Safe configuration with auto-rollback (`netplan try`).
+    - **DNS Privacy**: Enforces **Quad9** (DoT) and ignores ISP/DHCP DNS.
+    - **Firewall**: UFW configured with strict defaults.
+- **🐳 Docker & Dokploy**: Production-ready Docker setup (log rotation, overlay2) + Dokploy.
+- **🔒 Post-SSL Security**: Automatically locks down port 3000 after SSL setup.
+- **📊 Security Audit**: Comprehensive checkup (SSH, AppArmor, Kernel, DNS).
 
-Transforms a fresh Ubuntu VPS into a **secure, production-ready server** with:
-- ✅ Hardened SSH configuration (custom port, key-only auth)
-- ✅ Firewall (UFW) + intrusion prevention (Fail2Ban)
-- ✅ Secure DNS with Quad9 (encrypted, malware blocking)
-- ✅ Docker with production settings
-- ✅ Dokploy deployment platform
-- ✅ Automatic security updates
-- ✅ Complete rollback capability
+## 🚀 Quick Start
 
-**Time to setup:** ~10 minutes | **Difficulty:** Beginner-friendly
-
----
-
-## ⚡ Quick Start
-
-### Prerequisites
-- Fresh Ubuntu 24.04 LTS VPS
-- SSH access as `ubuntu` user
-- Your SSH public key ready
-
-### Installation
-
-**1. Get your SSH key** (on your local machine):
-```bash
-cat ~/.ssh/id_ed25519.pub
-# Copy the output
-```
-
-**2. Connect to your VPS**:
-```bash
-ssh ubuntu@YOUR_VPS_IP
-```
-
-**3. Download and run installer**:
-```bash
-git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
-cd vps-hardening-script-ubuntu-24.04-LTS
-chmod +x *.sh
-./install.sh
-```
-
-**4. Connect with your new user and run the main setup**:
-```bash
-# SSH with the new user created in step 3
-ssh your_new_user@YOUR_VPS_IP
-
-# Then run:
-git clone https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS.git
-cd vps-hardening-script-ubuntu-24.04-LTS
-chmod +x *.sh
-./main_setup.sh
-```
-Follow the interactive prompts:
-- System update and security tools installation
-- Custom SSH port configuration (50000-59999)
-- Docker and Dokploy installation
-- SSH connection test before finalizing
-- Confirm when SSH works on the new port
-
-**5. Access Dokploy**:
-```
-http://YOUR_VPS_IP:3000
-```
-
-**6. After SSL setup**:
-```bash
-./post_ssl_setup.sh  # Blocks port 3000 externally
-```
-
----
-
-## 📚 Documentation
-
-| Document | Description |
-|----------|-------------|
-| [**GUIDE.md**](GUIDE.md) | Step-by-step installation guide |
-| [**TROUBLESHOOTING.md**](TROUBLESHOOTING.md) | Common issues and solutions |
-| [**CHANGELOG.md**](CHANGELOG.md) | Version history and changes |
-| [**SSH_KEY_HELP.md**](SSH_KEY_HELP.md) | How to generate SSH keys |
-
----
-
-## 🛠️ Scripts Overview
-
-### Core Scripts
-```bash
-./install.sh              # One-command installer
-./create_user.sh          # Create secure admin user
-./main_setup.sh           # Main security setup
-./post_ssl_setup.sh       # Lock down port 3000 after SSL
-```
-
-### Maintenance
-```bash
-./system_check.sh         # Health check with diagnostics
-./security_audit.sh       # Comprehensive security scan
-./configure_docker.sh     # Update Docker configuration
-./emergency_rollback.sh   # Restore to safe state
-```
-
----
-
-## ✨ Key Features
-
-### 🔐 Security First
-- **Custom SSH port** (50000-59999) with dual-port safety during migration
-- **Interactive testing** before removing default user
-- **UFW firewall** configured before Docker (prevents bypass)
-- **Fail2Ban** monitors SSH attempts (24h ban)
-- **Root login disabled**
-- **SSH key-only authentication**
-- **Automatic security updates**
-- **Secure DNS** with Quad9 (encrypted, malware blocking)
-
-### 🐳 Docker Production-Ready
-- Log rotation (10MB max, 3 files)
-- Overlay2 storage driver
-- Swarm-compatible configuration
-- Health checks before deployment
-- Network cleanup automation
-
-### 🌐 Secure DNS (Quad9)
-- **DNS over TLS** - All queries encrypted
-- **DNSSEC** - Prevents DNS spoofing
-- **Malware blocking** - Automatic protection
-- **ECS enabled** - Optimized CDN performance
-- **IPv4 + IPv6** - Dual-stack ready
-- **8 DNS servers** - Maximum redundancy
-
-### 🛡️ Bulletproof Error Handling
-- **State management** - Resume from any step
-- **Automatic rollback** on errors
-- **Emergency recovery** script included
-- **Timestamped backups** of all configs
-- **Comprehensive logging**
-
-### 📊 Monitoring
-- Color-coded health checks
-- Security audit tool
-- Service status verification
-- Disk/memory warnings
-- iptables rules validation
-
----
-
-## 🎯 What Makes This Different
-
-| Feature | This Project | Typical Scripts |
-|---------|--------------|-----------------|
-| SSH Safety | ✅ Dual-port + testing | ❌ Direct change |
-| Rollback | ✅ Full state restore | ❌ Manual only |
-| Firewall | ✅ Before Docker | ❌ After (bypassed) |
-| Idempotent | ✅ Resume from any step | ❌ Start over |
-| Testing | ✅ Interactive verification | ❌ Hope it works |
-| Recovery | ✅ Emergency script | ❌ Console access only |
-
----
-
-## 🚨 Emergency Recovery
-
-**Lost SSH access?**
-```bash
-# Via OVH/provider console:
-cd vps-hardening-script-ubuntu-24.04-LTS
-sudo bash emergency_rollback.sh
-```
-
-This restores:
-- SSH to port 22
-- Disables firewall
-- Restores all backups
-- Re-enables services
-
----
-
-## 📋 System Requirements
-
-- **OS**: Ubuntu 24.04 LTS
-- **RAM**: 1GB minimum (2GB recommended)
-- **Disk**: 3GB free space
-- **Network**: Public IP address
-- **Access**: Root or sudo privileges
-
----
-
-## 🔍 Verification
-
-After installation, verify everything:
+### 1. One-Command Installation
+Run this on your fresh Ubuntu 24.04 VPS:
 
 ```bash
-# Quick health check
-./system_check.sh
-
-# Comprehensive security audit
-./security_audit.sh
-
-# Check specific services
-sudo systemctl status ssh docker fail2ban
-sudo ufw status
-sudo docker ps
+curl -sSL https://raw.githubusercontent.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS/main/install.sh | bash
 ```
 
----
+### 2. Using the Menu
+After installation, launch the main menu to configure your server:
 
-## 🎓 Architecture
-
-```
-┌─────────────────────────────────────────┐
-│         Internet Traffic                │
-└──────────────┬──────────────────────────┘
-               │
-        ┌──────▼──────┐
-        │     UFW     │  ← SSH only (custom port)
-        │  Firewall   │
-        └──────┬──────┘
-               │
-        ┌──────▼──────┐
-        │   Docker    │  ← Manages own ports
-        │   Engine    │     (80, 443, 3000*)
-        └──────┬──────┘
-               │
-        ┌──────▼──────┐
-        │   Dokploy   │  ← Deployment platform
-        │  Container  │
-        └─────────────┘
-
-* Port 3000 blocked externally after SSL setup
+```bash
+cd ~/vps-hardening
+sudo ./menu.sh
 ```
 
-### 🌐 DNS Configuration
+## 📋 Menu Options
 
-**Quad9 with DNS over TLS (DoT)**
+1.  **🚀 Run Full Setup**: The standard path for a new server. Handles user creation, firewall, and Docker.
+2.  **👤 Create User Only**: Just want a secure user? Use this.
+3.  **🌐 Configure Network**: Set a **Static IP** and enforce **Quad9 DNS**. Safe to use remotely!
+4.  **🔒 Post-SSL Security**: Run this *after* you've set up your domains in Dokploy to block external access to port 3000.
+5.  **📊 System Health Check**: Run a deep security audit of your system.
+6.  **🐳 Configure Docker**: Optimize Docker daemon settings.
 
-| Type | Servers | Features |
-|------|---------|----------|
-| **Primary** | 9.9.9.11, 149.112.112.11<br>2620:fe::11, 2620:fe::fe:11 | ECS enabled (CDN optimized) |
-| **Fallback** | 9.9.9.9, 149.112.112.112<br>2620:fe::fe, 2620:fe::9 | Standard (more privacy) |
+## 🛡️ Security Details
 
-**All DNS servers include:**
-- ✅ Malware/phishing blocking
-- ✅ DNSSEC validation
-- ✅ TLS encryption
-- ✅ IPv4 + IPv6 support
+| Feature | Description |
+| :--- | :--- |
+| **SSH** | Port changed (random 50000+), Root login disabled, Keys only. |
+| **Firewall** | UFW enabled. Default Deny Incoming. Ports 80/443/SSH allowed. |
+| **DNS** | **Quad9** enforced via Netplan & systemd-resolved. DHCP DNS ignored. |
+| **Fail2Ban** | Protects SSH against brute-force attacks. |
+| **Updates** | Unattended-upgrades enabled for security patches. |
+| **Docker** | Daemon hardened, log rotation enabled (10MB max). |
 
-**Why this works:**
-- UFW handles SSH (simple, reliable)
-- Docker handles containers (native, fast)
-- iptables blocks 3000 after SSL (secure)
-- No conflicts, no complexity
+## ⚠️ Important Notes
 
----
+- **Static IP**: The script uses `netplan try`. If you lose connection, **WAIT 120 SECONDS**. It will automatically revert changes.
+- **Port 3000**: Initially open for Dokploy setup. Use option #4 to close it once SSL is active.
+- **User Deletion**: The script aggressively removes the default `ubuntu` user for security. Ensure you test your new user connection first!
 
 ## 🤝 Contributing
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-**Found a bug?** [Open an issue](https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS/issues)
+## 📄 License
 
-**Have a feature idea?** [Start a discussion](https://github.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS/discussions)
-
----
-
-## 📊 Project Stats
-
-- **Scripts**: 11 production-ready bash scripts
-- **Documentation**: 10 comprehensive guides
-- **Security Fixes**: 15+ critical issues resolved
-- **New Features**: 30+ enhancements in v3.0
-- **Lines of Code**: ~2,500 added in latest version
-- **Test Coverage**: All scripts syntax-validated
-
----
-
-## 🏆 Tested On
-
-- ✅ OVH VPS
-- ✅ DigitalOcean Droplets
-- ✅ Hetzner Cloud
-- ✅ AWS EC2 (Ubuntu 24.04)
-- ✅ Multiple reboots verified
-- ✅ SSH persistence confirmed
-- ✅ Dokploy accessibility validated
-
----
-
-## 📜 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-
-**⭐ Star this repo if it helped you!**
-
-Made with ❤️ for the DevOps community
-
-</div>
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

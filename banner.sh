@@ -218,5 +218,39 @@ show_spinner() {
     printf "\r${GREEN}✓${NC} ${message}... Done!\n"
 }
 
-# Note: Functions are available when this file is sourced
-# No need to export when using 'source' command
+# --- Utility Functions ---
+
+# Check if running as root
+check_root() {
+    if [ "$(id -u)" -ne 0 ]; then
+        echo -e "${RED}Error: This script requires sudo privileges.${NC}"
+        echo "Please run with: sudo $0"
+        exit 1
+    fi
+}
+
+# Standardized logging
+log_info() {
+    echo -e "${CYAN}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[OK]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check command existence
+check_command() {
+    if ! command -v "$1" &> /dev/null; then
+        log_error "Command '$1' not found. Please install it."
+        return 1
+    fi
+    return 0
+}
