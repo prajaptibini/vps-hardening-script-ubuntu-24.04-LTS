@@ -81,7 +81,13 @@ done
 
 echo ""
 show_section "Creating User: $NEW_USER"
-sudo adduser $NEW_USER
+# Create user non-interactively first
+sudo adduser --gecos "" --disabled-password "$NEW_USER"
+
+# Set password manually to ensure interactivity works
+echo ""
+echo "Set password for $NEW_USER:"
+sudo passwd "$NEW_USER"
 
 echo ""
 show_section "Granting Sudo Privileges"
@@ -99,7 +105,12 @@ echo ""
 echo -n "SSH Public Key: "
 
 # Read the public key from user input
-read -r SSH_KEY
+# Read the public key from user input
+if [ -c /dev/tty ]; then
+    read -r SSH_KEY < /dev/tty
+else
+    read -r SSH_KEY
+fi
 
 if [ -z "$SSH_KEY" ]; then
     echo ""

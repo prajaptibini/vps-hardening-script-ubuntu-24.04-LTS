@@ -160,7 +160,12 @@ echo "  Step 1/2: Creating secure user"
 echo "=================================================================="
 echo ""
 
-./create_user.sh
+# Run create_user.sh with explicit TTY input
+if [ -c /dev/tty ]; then
+    ./create_user.sh < /dev/tty
+else
+    ./create_user.sh
+fi
 
 # Read the created username
 if [ -f /tmp/new_user_name.txt ]; then
