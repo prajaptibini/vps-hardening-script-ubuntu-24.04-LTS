@@ -133,7 +133,7 @@ echo ""
 read -p "Do you want to continue? (yes/no): " -r
 echo ""
 
-if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
+if [[ ! $REPLY =~ ^[Yy](es)?$ ]]; then
     echo "Installation cancelled."
     exit 0
 fi
