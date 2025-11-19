@@ -188,18 +188,12 @@ else
     CREATED_USER="prod-dokploy"
 fi
 
-# Copy installation directory to new user's home
-echo ""
-echo "→ Copying installation files to new user's home directory..."
-NEW_USER_INSTALL_DIR="/home/$CREATED_USER/vps-hardening-script-ubuntu-24.04-LTS"
-
-if [ -d "$INSTALL_DIR" ]; then
-    sudo cp -r "$INSTALL_DIR" "$NEW_USER_INSTALL_DIR"
-    sudo chown -R $CREATED_USER:$CREATED_USER "$NEW_USER_INSTALL_DIR"
-    sudo chmod +x "$NEW_USER_INSTALL_DIR"/*.sh
-    echo "✅ Installation files copied to $NEW_USER_INSTALL_DIR"
-else
-    echo "⚠️  Warning: Could not copy installation directory"
+# Note: Scripts are already copied by create_user.sh
+# Just verify and display the path
+if [ -f /tmp/vps_setup_dirname.txt ]; then
+    DIRNAME=$(cat /tmp/vps_setup_dirname.txt)
+    echo ""
+    echo "✅ Scripts are ready in: /home/$CREATED_USER/$DIRNAME"
 fi
 
 echo ""

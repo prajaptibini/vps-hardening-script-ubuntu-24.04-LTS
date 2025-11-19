@@ -242,19 +242,26 @@ sudo chmod 644 /home/$NEW_USER/.vps_setup_user
 echo ""
 echo "→ Copying installation scripts to new user's home directory..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIRNAME=$(basename "$SCRIPT_DIR")
+
 if [ -d "$SCRIPT_DIR" ]; then
     # Copy the entire directory to new user's home
-    sudo cp -r "$SCRIPT_DIR" "/home/$NEW_USER/" || {
+    if sudo cp -r "$SCRIPT_DIR" "/home/$NEW_USER/"; then
+        # Set proper ownership
+        sudo chown -R $NEW_USER:$NEW_USER "/home/$NEW_USER/$DIRNAME"
+        
+        # Make scripts executable
+        sudo chmod +x "/home/$NEW_USER/$DIRNAME"/*.sh 2>/dev/null || true
+        
+        echo "✅ Scripts copied to /home/$NEW_USER/$DIRNAME"
+        
+        # Save the directory name for later use
+        echo "$DIRNAME" | sudo tee /tmp/vps_setup_dirname.txt > /dev/null
+    else
         echo "⚠️  Warning: Could not copy scripts to new user's home"
         echo "You can manually copy them later with:"
         echo "  sudo cp -r $SCRIPT_DIR /home/$NEW_USER/"
-    }
-    
-    # Set proper ownership
-    DIRNAME=$(basename "$SCRIPT_DIR")
-    sudo chown -R $NEW_USER:$NEW_USER "/home/$NEW_USER/$DIRNAME" 2>/dev/null || true
-    
-    echo "✅ Scripts copied to /home/$NEW_USER/$DIRNAME"
+    fi
 else
     echo "⚠️  Warning: Could not determine script directory"
 fi
@@ -279,7 +286,12 @@ else
     PUBLIC_IP="<your_server_ip>"
 fi
 
-DIRNAME=$(basename "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")
+# Get the directory name that was saved
+if [ -f /tmp/vps_setup_dirname.txt ]; then
+    DIRNAME=$(cat /tmp/vps_setup_dirname.txt)
+else
+    DIRNAME=$(basename "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")
+fi
 
 show_info_box "Next Steps" \
     "${BOLD}1.${NC} Open a ${YELLOW}NEW${NC} terminal window (keep this one open!)" \
@@ -294,7 +306,7 @@ show_info_box "Next Steps" \
     "   ${CYAN}exit${NC}" \
     "" \
     "${BOLD}5.${NC} Reconnect with the new user and run the main setup:" \
-    "   ${CYAN}cd $DIRNAME${NC}" \
+    "   ${CYAN}cd ~/$DIRNAME${NC}" \
     "   ${CYAN}./main_setup.sh${NC}" \
     "" \
     "${GRAY}Scripts are already copied to your home directory!${NC}"
