@@ -211,25 +211,55 @@ read -p "Did SSH work? (yes/no): " SSH_TEST
 if [ "$SSH_TEST" != "yes" ]; then
     warn "SSH test failed - keeping port 22 open"
     warn "Fix the issue and run: sudo ufw delete allow 22/tcp"
-    warn "User '$DEFAULT_USER' NOT removed for safety"
 else
     # Close port 22
     sudo sed -i '/^Port 22$/d' /etc/ssh/sshd_config.d/hardening.conf
     sudo systemctl restart ssh
     sudo ufw delete allow 22/tcp
-    log "Port 22 closed"
+    log "Port 22 closed - only port $SSH_PORT is active"
+fi
+
+# === STEP 9: REMOVE DEFAULT USER ===
+step "Step 9/9: Remove default user"
+
+if ! id "$DEFAULT_USER" &>/dev/null; then
+    log "User '$DEFAULT_USER' doesn't exist (already removed)"
+else
+    echo ""
+    echo "The default user '$DEFAULT_USER' still exists."
+    echo "For security, it should be removed."
+    echo ""
+    echo "WARNING: Make sure you can login with '$NEW_USER' before removing!"
+    echo ""
     
-    # Remove default user
-    if id "$DEFAULT_USER" &>/dev/null; then
-        sudo pkill -u $DEFAULT_USER 2>/dev/null || true
-        sudo deluser --remove-home $DEFAULT_USER 2>/dev/null || \
-        sudo userdel -r -f $DEFAULT_USER 2>/dev/null || true
+    read -p "Remove user '$DEFAULT_USER'? (yes/no): " REMOVE_USER
+    
+    if [ "$REMOVE_USER" = "yes" ]; then
+        echo "Removing user '$DEFAULT_USER'..."
         
-        if ! id "$DEFAULT_USER" &>/dev/null; then
-            log "User '$DEFAULT_USER' removed"
+        # Kill all processes
+        sudo pkill -9 -u $DEFAULT_USER 2>/dev/null || true
+        sleep 2
+        
+        # Remove user
+        if sudo deluser --remove-home $DEFAULT_USER 2>/dev/null; then
+            log "User '$DEFAULT_USER' removed with deluser"
+        elif sudo userdel -r -f $DEFAULT_USER 2>/dev/null; then
+            log "User '$DEFAULT_USER' removed with userdel"
         else
-            warn "Could not remove '$DEFAULT_USER' - do it manually"
+            warn "Could not remove '$DEFAULT_USER' automatically"
+            echo "Try manually: sudo userdel -r -f $DEFAULT_USER"
         fi
+        
+        # Verify
+        if ! id "$DEFAULT_USER" &>/dev/null; then
+            log "Verified: '$DEFAULT_USER' no longer exists"
+        else
+            warn "User '$DEFAULT_USER' still exists - remove manually"
+        fi
+    else
+        warn "User '$DEFAULT_USER' NOT removed"
+        echo "You can remove it later with: sudo deluser --remove-home $DEFAULT_USER"
     fi
 fi
 
