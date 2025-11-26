@@ -6,7 +6,7 @@
 set -e
 
 # === CONFIGURATION ===
-DEFAULT_USER="ubuntu"
+CURRENT_USER=$(whoami)
 SSH_PORT=$((RANDOM % 10000 + 50000))
 LOG_FILE="/var/log/vps_setup.log"
 
@@ -219,47 +219,55 @@ else
     log "Port 22 closed - only port $SSH_PORT is active"
 fi
 
-# === STEP 9: REMOVE DEFAULT USER ===
-step "Step 9/9: Remove default user"
+# === STEP 9: REMOVE OLD USER ===
+step "Step 9/9: Remove old user"
 
-if ! id "$DEFAULT_USER" &>/dev/null; then
-    log "User '$DEFAULT_USER' doesn't exist (already removed)"
+# The old user is the one we started with (detected at the beginning)
+OLD_USER="$CURRENT_USER"
+
+# Don't remove if it's the same as the new user
+if [ "$OLD_USER" = "$NEW_USER" ]; then
+    log "Old user and new user are the same - nothing to remove"
+elif [ "$OLD_USER" = "root" ]; then
+    log "Running as root - no user to remove"
+elif ! id "$OLD_USER" &>/dev/null; then
+    log "User '$OLD_USER' doesn't exist (already removed)"
 else
     echo ""
-    echo "The default user '$DEFAULT_USER' still exists."
-    echo "For security, it should be removed."
+    echo "You are currently logged in as '$OLD_USER'."
+    echo "For security, this user should be removed after setup."
     echo ""
     echo "WARNING: Make sure you can login with '$NEW_USER' before removing!"
     echo ""
     
-    read -p "Remove user '$DEFAULT_USER'? (yes/no): " REMOVE_USER
+    read -p "Remove user '$OLD_USER'? (yes/no): " REMOVE_USER
     
     if [ "$REMOVE_USER" = "yes" ]; then
-        echo "Removing user '$DEFAULT_USER'..."
+        echo "Removing user '$OLD_USER'..."
         
-        # Kill all processes
-        sudo pkill -9 -u $DEFAULT_USER 2>/dev/null || true
+        # Kill all processes (except current session)
+        sudo pkill -9 -u $OLD_USER 2>/dev/null || true
         sleep 2
         
         # Remove user
-        if sudo deluser --remove-home $DEFAULT_USER 2>/dev/null; then
-            log "User '$DEFAULT_USER' removed with deluser"
-        elif sudo userdel -r -f $DEFAULT_USER 2>/dev/null; then
-            log "User '$DEFAULT_USER' removed with userdel"
+        if sudo deluser --remove-home $OLD_USER 2>/dev/null; then
+            log "User '$OLD_USER' removed with deluser"
+        elif sudo userdel -r -f $OLD_USER 2>/dev/null; then
+            log "User '$OLD_USER' removed with userdel"
         else
-            warn "Could not remove '$DEFAULT_USER' automatically"
-            echo "Try manually: sudo userdel -r -f $DEFAULT_USER"
+            warn "Could not remove '$OLD_USER' automatically"
+            echo "Try manually: sudo userdel -r -f $OLD_USER"
         fi
         
         # Verify
-        if ! id "$DEFAULT_USER" &>/dev/null; then
-            log "Verified: '$DEFAULT_USER' no longer exists"
+        if ! id "$OLD_USER" &>/dev/null; then
+            log "Verified: '$OLD_USER' no longer exists"
         else
-            warn "User '$DEFAULT_USER' still exists - remove manually"
+            warn "User '$OLD_USER' still exists - remove manually"
         fi
     else
-        warn "User '$DEFAULT_USER' NOT removed"
-        echo "You can remove it later with: sudo deluser --remove-home $DEFAULT_USER"
+        warn "User '$OLD_USER' NOT removed"
+        echo "You can remove it later with: sudo deluser --remove-home $OLD_USER"
     fi
 fi
 
