@@ -1,0 +1,254 @@
+#!/bin/bash
+# VPS Hardening Script - Simple & Reliable
+# Ubuntu 24.04 LTS + Dokploy
+# Usage: curl -sSL https://raw.githubusercontent.com/.../setup.sh | bash
+
+set -e
+
+# === CONFIGURATION ===
+DEFAULT_USER="ubuntu"
+SSH_PORT=$((RANDOM % 10000 + 50000))
+LOG_FILE="/var/log/vps_setup.log"
+
+# === COLORS (minimal) ===
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# === FUNCTIONS ===
+log() { echo -e "${GREEN}[OK]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+step() { echo ""; echo "=== $1 ==="; echo ""; }
+
+# === PRE-CHECKS ===
+step "Pre-flight checks"
+
+# Must have sudo
+if ! sudo -v; then
+    error "This script requires sudo privileges"
+fi
+
+# Must be Ubuntu 24.04
+if ! grep -q "Ubuntu 24" /etc/os-release 2>/dev/null; then
+    warn "This script is designed for Ubuntu 24.04 LTS"
+fi
+
+# Internet connectivity
+if ! ping -c 1 8.8.8.8 &>/dev/null; then
+    error "No internet connection"
+fi
+log "Internet OK"
+
+# === STEP 1: CREATE USER ===
+step "Step 1/8: Create secure user"
+
+echo "Choose a username for your admin account:"
+read -p "Username: " NEW_USER
+
+# Validate username
+if [ -z "$NEW_USER" ]; then
+    error "Username cannot be empty"
+fi
+
+if id "$NEW_USER" &>/dev/null; then
+    error "User '$NEW_USER' already exists"
+fi
+
+# Create user
+sudo adduser --gecos "" --disabled-password "$NEW_USER"
+log "User '$NEW_USER' created"
+
+# Set password
+echo "Set password for $NEW_USER:"
+while true; do
+    read -s -p "Password: " PASS1; echo
+    read -s -p "Confirm: " PASS2; echo
+    
+    if [ -z "$PASS1" ]; then
+        warn "Password cannot be empty"
+        continue
+    fi
+    
+    if [ "$PASS1" != "$PASS2" ]; then
+        warn "Passwords don't match"
+        continue
+    fi
+    
+    echo "$NEW_USER:$PASS1" | sudo chpasswd && break
+done
+log "Password set"
+
+# Add to sudo group
+sudo usermod -aG sudo "$NEW_USER"
+log "Sudo access granted"
+
+# === STEP 2: SSH KEY ===
+step "Step 2/8: Configure SSH key"
+
+echo "Paste your SSH public key (ssh-ed25519 or ssh-rsa):"
+read -r SSH_KEY
+
+if [ -z "$SSH_KEY" ]; then
+    error "SSH key cannot be empty"
+fi
+
+# Validate SSH key format
+if ! echo "$SSH_KEY" | grep -qE "^(ssh-rsa|ssh-ed25519|ecdsa)"; then
+    error "Invalid SSH key format"
+fi
+
+# Setup SSH directory
+sudo mkdir -p /home/$NEW_USER/.ssh
+echo "$SSH_KEY" | sudo tee /home/$NEW_USER/.ssh/authorized_keys > /dev/null
+sudo chmod 700 /home/$NEW_USER/.ssh
+sudo chmod 600 /home/$NEW_USER/.ssh/authorized_keys
+sudo chown -R $NEW_USER:$NEW_USER /home/$NEW_USER/.ssh
+log "SSH key configured"
+
+# === STEP 3: SYSTEM UPDATE ===
+step "Step 3/8: Update system"
+
+sudo apt-get update -qq
+sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq
+log "System updated"
+
+# === STEP 4: INSTALL SECURITY TOOLS ===
+step "Step 4/8: Install security tools"
+
+sudo apt-get install -y -qq ufw fail2ban
+log "UFW and Fail2Ban installed"
+
+# === STEP 5: CONFIGURE FIREWALL ===
+step "Step 5/8: Configure firewall"
+
+sudo ufw --force reset > /dev/null
+sudo ufw default deny incoming > /dev/null
+sudo ufw default allow outgoing > /dev/null
+sudo ufw allow 22/tcp > /dev/null      # Keep port 22 for now
+sudo ufw allow $SSH_PORT/tcp > /dev/null
+sudo ufw allow 80/tcp > /dev/null
+sudo ufw allow 443/tcp > /dev/null
+sudo ufw allow 3000/tcp > /dev/null    # Dokploy
+sudo ufw --force enable > /dev/null
+log "Firewall configured (ports: 22, $SSH_PORT, 80, 443, 3000)"
+
+# === STEP 6: CONFIGURE SSH ===
+step "Step 6/8: Configure SSH"
+
+# Backup
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+
+# Configure SSH
+sudo tee /etc/ssh/sshd_config.d/hardening.conf > /dev/null << EOF
+Port 22
+Port $SSH_PORT
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+EOF
+
+# Restart SSH
+sudo systemctl restart ssh
+log "SSH configured (ports: 22 and $SSH_PORT)"
+
+# === STEP 7: INSTALL DOCKER ===
+step "Step 7/8: Install Docker"
+
+# Install Docker
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $NEW_USER
+log "Docker installed"
+
+# Configure Docker
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json > /dev/null << EOF
+{
+  "log-driver": "json-file",
+  "log-opts": {"max-size": "10m", "max-file": "3"}
+}
+EOF
+sudo systemctl restart docker
+log "Docker configured"
+
+# === STEP 8: INSTALL DOKPLOY ===
+step "Step 8/8: Install Dokploy"
+
+curl -sSL https://dokploy.com/install.sh | sudo sh
+log "Dokploy installed"
+
+# Wait for Dokploy
+echo "Waiting for Dokploy to start..."
+for i in {1..30}; do
+    if curl -s http://localhost:3000 &>/dev/null; then
+        log "Dokploy is running"
+        break
+    fi
+    sleep 2
+done
+
+# === TEST SSH CONNECTION ===
+step "CRITICAL: Test SSH connection"
+
+PUBLIC_IP=$(curl -s ifconfig.me)
+
+echo ""
+echo "=============================================="
+echo "  BEFORE CONTINUING, TEST YOUR SSH CONNECTION"
+echo "=============================================="
+echo ""
+echo "Open a NEW terminal and run:"
+echo ""
+echo "  ssh $NEW_USER@$PUBLIC_IP -p $SSH_PORT"
+echo ""
+echo "If it works, come back here and type 'yes'"
+echo "If it fails, type 'no' (port 22 will stay open)"
+echo ""
+
+read -p "Did SSH work? (yes/no): " SSH_TEST
+
+if [ "$SSH_TEST" != "yes" ]; then
+    warn "SSH test failed - keeping port 22 open"
+    warn "Fix the issue and run: sudo ufw delete allow 22/tcp"
+    warn "User '$DEFAULT_USER' NOT removed for safety"
+else
+    # Close port 22
+    sudo sed -i '/^Port 22$/d' /etc/ssh/sshd_config.d/hardening.conf
+    sudo systemctl restart ssh
+    sudo ufw delete allow 22/tcp
+    log "Port 22 closed"
+    
+    # Remove default user
+    if id "$DEFAULT_USER" &>/dev/null; then
+        sudo pkill -u $DEFAULT_USER 2>/dev/null || true
+        sudo deluser --remove-home $DEFAULT_USER 2>/dev/null || \
+        sudo userdel -r -f $DEFAULT_USER 2>/dev/null || true
+        
+        if ! id "$DEFAULT_USER" &>/dev/null; then
+            log "User '$DEFAULT_USER' removed"
+        else
+            warn "Could not remove '$DEFAULT_USER' - do it manually"
+        fi
+    fi
+fi
+
+# === DONE ===
+step "Setup Complete!"
+
+echo ""
+echo "=============================================="
+echo "  YOUR SERVER IS READY"
+echo "=============================================="
+echo ""
+echo "SSH:     ssh $NEW_USER@$PUBLIC_IP -p $SSH_PORT"
+echo "Dokploy: http://$PUBLIC_IP:3000"
+echo ""
+echo "Next steps:"
+echo "  1. Access Dokploy and create admin account"
+echo "  2. Configure your domain + SSL"
+echo "  3. After SSL, block port 3000:"
+echo "     sudo iptables -I DOCKER-USER -p tcp --dport 3000 -j DROP"
+echo "     sudo iptables -I DOCKER-USER -i lo -p tcp --dport 3000 -j ACCEPT"
+echo ""
+echo "=============================================="
