@@ -190,6 +190,18 @@ APT::Periodic::AutocleanInterval "7";
 EOF
 log "Automatic security updates enabled"
 
+# Verify AppArmor is active (enabled by default on Ubuntu 24.04)
+if sudo aa-status &>/dev/null; then
+    PROFILES=$(sudo aa-status 2>/dev/null | grep "profiles are loaded" | awk '{print $1}')
+    log "AppArmor active ($PROFILES profiles loaded)"
+else
+    warn "AppArmor not running - installing..."
+    sudo apt-get install -y -qq apparmor apparmor-utils
+    sudo systemctl enable apparmor
+    sudo systemctl start apparmor
+    log "AppArmor installed and enabled"
+fi
+
 # Configure Fail2Ban for custom SSH port
 sudo tee /etc/fail2ban/jail.local > /dev/null << EOF
 [sshd]

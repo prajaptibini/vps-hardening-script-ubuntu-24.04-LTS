@@ -37,6 +37,7 @@ The script runs 9 steps interactively:
 | Rate limiting | UFW limits SSH to 6 connections/30s per IP |
 | Password policy | Min 12 chars, mixed case, numbers, symbols required |
 | Audit logging | Tracks sudo, auth, SSH, user/group changes |
+| AppArmor | Mandatory access control (verified/enabled) |
 | Auto-updates | Security patches applied daily via unattended-upgrades |
 | Timezone | UTC (consistent logs) |
 | Swap | 2GB swap file (prevents OOM kills) |
