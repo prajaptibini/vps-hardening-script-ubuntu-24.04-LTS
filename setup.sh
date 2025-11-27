@@ -114,6 +114,25 @@ sudo apt-get update -qq
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq
 log "System updated"
 
+# Configure timezone (UTC for servers)
+sudo timedatectl set-timezone UTC
+log "Timezone set to UTC"
+
+# Configure swap if not present (2GB)
+if [ ! -f /swapfile ]; then
+    sudo fallocate -l 2G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile > /dev/null
+    sudo swapon /swapfile
+    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab > /dev/null
+    # Optimize swap usage
+    echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf > /dev/null
+    sudo sysctl -p > /dev/null
+    log "Swap configured (2GB, swappiness=10)"
+else
+    log "Swap already exists"
+fi
+
 # === STEP 4: INSTALL SECURITY TOOLS ===
 step "Step 4/8: Install security tools"
 

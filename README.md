@@ -35,6 +35,8 @@ The script runs 9 steps interactively:
 | Firewall | UFW with deny-by-default, only SSH/80/443/3000 open |
 | Fail2Ban | Protects SSH (3 attempts, 1h ban) |
 | Auto-updates | Security patches applied daily via unattended-upgrades |
+| Timezone | UTC (consistent logs) |
+| Swap | 2GB swap file (prevents OOM kills) |
 | Docker | Log rotation (10MB max, 3 files) |
 
 ## Safety Measures
