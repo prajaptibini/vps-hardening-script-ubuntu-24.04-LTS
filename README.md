@@ -58,6 +58,16 @@ SSH:     ssh your-user@your-ip -p YOUR_PORT
 Dokploy: http://your-ip:3000
 ```
 
+### Remove Default User
+
+After reconnecting with your new user, run the cleanup script:
+
+```bash
+./cleanup.sh
+```
+
+This will safely remove the default `ubuntu` user and its home directory.
+
 ### Post-SSL Security
 
 After configuring SSL in Dokploy, block external access to port 3000:
