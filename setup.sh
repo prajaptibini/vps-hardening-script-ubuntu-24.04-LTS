@@ -61,13 +61,19 @@ sudo adduser --gecos "" --disabled-password "$NEW_USER"
 log "User '$NEW_USER' created"
 
 # Set password
-echo "Set password for $NEW_USER:"
+echo "Set password for $NEW_USER (min 12 chars, mixed case, numbers, symbols):"
 while true; do
     read -s -p "Password: " PASS1; echo
     read -s -p "Confirm: " PASS2; echo
     
     if [ -z "$PASS1" ]; then
         warn "Password cannot be empty"
+        continue
+    fi
+    
+    # Basic validation (12+ chars)
+    if [ ${#PASS1} -lt 12 ]; then
+        warn "Password must be at least 12 characters"
         continue
     fi
     
@@ -222,13 +228,13 @@ step "Step 5/8: Configure firewall"
 sudo ufw --force reset > /dev/null
 sudo ufw default deny incoming > /dev/null
 sudo ufw default allow outgoing > /dev/null
-sudo ufw limit 22/tcp > /dev/null      # Keep port 22 for now (rate limited)
-sudo ufw limit $SSH_PORT/tcp > /dev/null  # Rate limited: max 6 conn/30s
+sudo ufw allow 22/tcp > /dev/null      # Keep port 22 for now (no rate limit during setup)
+sudo ufw allow $SSH_PORT/tcp > /dev/null  # No rate limit during setup
 sudo ufw allow 80/tcp > /dev/null
 sudo ufw allow 443/tcp > /dev/null
 sudo ufw allow 3000/tcp > /dev/null    # Dokploy
 sudo ufw --force enable > /dev/null
-log "Firewall configured (ports: 22, $SSH_PORT with rate limiting, 80, 443, 3000)"
+log "Firewall configured (ports: 22, $SSH_PORT, 80, 443, 3000)"
 
 # === STEP 6: CONFIGURE SSH ===
 step "Step 6/8: Configure SSH"
@@ -335,7 +341,11 @@ findtime = 600
 EOF
     sudo systemctl restart fail2ban
     
-    log "Security hardened: Port 22 closed, password auth disabled"
+    # Apply rate limiting now that SSH is confirmed working
+    sudo ufw delete allow $SSH_PORT/tcp > /dev/null
+    sudo ufw limit $SSH_PORT/tcp > /dev/null
+    
+    log "Security hardened: Port 22 closed, password auth disabled, rate limiting enabled"
 fi
 
 # === STEP 9: REMOVE OLD USER ===
